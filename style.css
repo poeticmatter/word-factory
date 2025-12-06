@@ -149,10 +149,12 @@ h1 {
     display: flex;
     gap: 3px;
     justify-content: center;
+    width: 100%;
 }
 
 .key {
-    width: 32px; /* Slightly smaller keys */
+    flex: 1;
+    max-width: 40px;
     height: 45px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -252,13 +254,15 @@ h1 {
 /* Action Keys Styling */
 .key-action {
     background-color: #eee;
-    width: 40px; /* Slightly wider */
+    flex-grow: 1.5;
+    max-width: 60px;
 }
 
 .key-submit {
-    background-color: #dff9fb;
-    border-color: #c7ecee;
-    width: 40px; /* Slightly wider */
+    background-color: #eee;
+    border-color: #ccc;
+    flex-grow: 1.5;
+    max-width: 60px;
 }
 
 /* Mobile Responsiveness */
