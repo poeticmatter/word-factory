@@ -10,17 +10,15 @@
     <div id="app">
         <header>
             <h1>Word Auction</h1>
+            <div id="hud">
+                <div class="hud-item">Cash: $<span id="cash-display">0.00</span></div>
+                <div class="hud-item">Turn: <span id="turn-display">0</span></div>
+            </div>
         </header>
 
         <main>
             <section id="customers-container" class="customers-grid">
-                <!-- Customer cards will be injected here.
-                     Structure per card:
-                     <div class="customer-card">
-                         <div class="portrait"><img src="..." /></div>
-                         <div class="stats">...</div>
-                     </div>
-                -->
+                <!-- Customer cards will be injected here. -->
             </section>
 
             <section id="input-container" class="input-area">

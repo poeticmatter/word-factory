@@ -19,11 +19,30 @@ header {
     text-align: center;
     padding-bottom: 20px;
     border-bottom: 2px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 }
 
 h1 {
     margin: 0;
     color: #2c3e50;
+}
+
+#hud {
+    display: flex;
+    gap: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #555;
+}
+
+.hud-item {
+    background: #fff;
+    padding: 5px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .customers-grid {
@@ -35,12 +54,11 @@ h1 {
     background-color: white;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    min-height: 200px; /* Ensure visibility even if empty */
+    min-height: 200px;
 }
 
-/* Style for customer cards (future-proofing) */
 .customer-card {
-    background: #fff;
+    background: #ffffff;
     border: 1px solid #e1e1e1;
     border-radius: 8px;
     width: 200px;
@@ -48,7 +66,7 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle box-shadow */
     transition: transform 0.2s;
 }
 
@@ -69,8 +87,50 @@ h1 {
 }
 
 .portrait img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+.customer-info {
+    text-align: center;
     width: 100%;
-    height: auto;
+}
+
+.target-letter {
+    font-size: 2em;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.constraint-text {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
+.price {
+    font-size: 1.1em;
+    color: #27ae60;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.patience {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    color: #e74c3c;
+    font-size: 1.2em;
+}
+
+.dot.filled {
+    color: #e74c3c;
+}
+
+.dot.empty {
+    color: #ccc;
 }
 
 .input-area {
