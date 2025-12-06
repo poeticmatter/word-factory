@@ -2,6 +2,7 @@ import { GAME_CONFIG } from './config.js';
 import { state } from './state.js';
 import { ui } from './ui.js';
 import { GameLogic } from './logic.js';
+import { InputHandler } from './input.js';
 
 console.log("Game System Initialized");
 
@@ -13,6 +14,9 @@ GameLogic.initializeGame(state);
 
 // Initial Render
 ui.render(state);
+
+// Attach Event Listeners
+document.addEventListener('keydown', (e) => InputHandler.handlePhysicalKey(e));
 
 // Log to verify everything is loaded correctly
 console.log("Configuration:", GAME_CONFIG);
