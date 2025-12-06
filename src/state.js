@@ -7,6 +7,7 @@ export const state = {
     letterCosts: {},
     buffer: "",
     maxSlots: GAME_CONFIG.MAX_SLOTS,
+    tileBag: [],
 
     init() {
         this.cash = GAME_CONFIG.START_CASH;
@@ -14,6 +15,7 @@ export const state = {
         this.activeSlots = [];
         this.buffer = "";
         this.maxSlots = GAME_CONFIG.MAX_SLOTS;
+        this.tileBag = [];
 
         // Initialize letterCosts (A-Z) all at 1.00
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
