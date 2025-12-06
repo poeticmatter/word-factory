@@ -207,3 +207,11 @@ h1 {
     border-color: #333;
     background-color: #fff;
 }
+
+/* Invalid Word Styling */
+.text-invalid .letter-slot {
+    color: #999;
+    border-color: #ccc;
+    text-decoration: line-through;
+    background-color: #f0f0f0;
+}

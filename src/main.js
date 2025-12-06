@@ -3,21 +3,33 @@ import { state } from './state.js';
 import { ui } from './ui.js';
 import { GameLogic } from './logic.js';
 import { InputHandler } from './input.js';
+import { Dictionary } from './dictionary.js';
 
 console.log("Game System Initialized");
 
-// Initialize the game state
-state.init();
+// Wrapper for async initialization
+async function initApp() {
+    console.log("Loading Dictionary...");
+    // You could render a loading screen here via UI if desired
+    // ui.renderLoading();
 
-// Game Logic Initialization
-GameLogic.initializeGame(state);
+    await Dictionary.loadDictionary();
 
-// Initial Render
-ui.render(state);
+    // Initialize the game state
+    state.init();
 
-// Attach Event Listeners
-document.addEventListener('keydown', (e) => InputHandler.handlePhysicalKey(e));
+    // Game Logic Initialization
+    GameLogic.initializeGame(state);
 
-// Log to verify everything is loaded correctly
-console.log("Configuration:", GAME_CONFIG);
-console.log("Initial State:", state);
+    // Initial Render
+    ui.render(state);
+
+    // Attach Event Listeners
+    document.addEventListener('keydown', (e) => InputHandler.handlePhysicalKey(e));
+
+    // Log to verify everything is loaded correctly
+    console.log("Configuration:", GAME_CONFIG);
+    console.log("Initial State:", state);
+}
+
+initApp();

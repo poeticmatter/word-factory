@@ -1,4 +1,5 @@
 import { InputHandler } from './input.js';
+import { Dictionary } from './dictionary.js';
 
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
@@ -83,10 +84,22 @@ export const ui = {
             inputContainer.insertBefore(bufferDisplay, keyboard);
         }
 
+        // Check validity if buffer is full (5 chars)
+        const isFull = state.buffer.length === 5;
+        const isValid = isFull && Dictionary.isValid(state.buffer);
+        const isInvalid = isFull && !isValid;
+
         // Render 5 slots for buffer
         bufferDisplay.innerHTML = '';
         const bufferRow = document.createElement('div');
         bufferRow.className = 'slot-row';
+
+        if (isInvalid) {
+            bufferRow.classList.add('text-invalid');
+        } else {
+            bufferRow.classList.remove('text-invalid');
+        }
+
         for(let i=0; i<5; i++) {
              const slot = document.createElement('div');
              slot.className = 'letter-slot';
@@ -134,10 +147,6 @@ export const ui = {
             }
             keyboard.appendChild(rowDiv);
         });
-
-        // Add special keys (Backspace, Enter, Space) visual?
-        // Prompt only asked for "Show the Letter and Current Price".
-        // But InputHandler supports them.
     },
 
     render(state) {

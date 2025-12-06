@@ -1,4 +1,5 @@
 import { GAME_CONFIG, SCRABBLE_DISTRIBUTION, INVALID_POSITIONS } from './config.js';
+import { Dictionary } from './dictionary.js';
 
 export const GameLogic = {
     fillTileBag(state) {
@@ -97,6 +98,11 @@ export const GameLogic = {
     processTurn(state) {
         if (state.buffer.length !== 5) {
             return { success: false, message: "Word must be 5 letters" };
+        }
+
+        // Dictionary Check
+        if (!Dictionary.isValid(state.buffer)) {
+            return { success: false, message: "Unknown Word" };
         }
 
         // Calculate Cost
