@@ -95,6 +95,26 @@ export const GameLogic = {
         state.activeSlots.sort((a, b) => a.constraint.index - b.constraint.index);
     },
 
+    calculatePrediction(state, currentBuffer) {
+        let cost = 0;
+        for (let char of currentBuffer) {
+            cost += state.letterCosts[char] || 0;
+        }
+
+        let income = 0;
+        state.activeSlots.forEach(customer => {
+            // Check if buffer is long enough to cover the index
+            if (currentBuffer.length > customer.constraint.index) {
+                const charAtConstraint = currentBuffer[customer.constraint.index];
+                if (charAtConstraint === customer.constraint.letter) {
+                    income += customer.willingPrice;
+                }
+            }
+        });
+
+        return { cost, income, profit: income - cost };
+    },
+
     processTurn(state) {
         if (state.buffer.length !== 5) {
             return { success: false, message: "Word must be 5 letters" };

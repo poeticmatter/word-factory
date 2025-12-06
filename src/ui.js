@@ -1,5 +1,6 @@
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
+import { GameLogic } from './logic.js';
 
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
@@ -109,6 +110,40 @@ export const ui = {
         }
         bufferDisplay.appendChild(bufferRow);
 
+        // Stats Row
+        // Calculate prediction
+        const prediction = GameLogic.calculatePrediction(state, state.buffer);
+
+        // Check if stats row exists, else create it
+        let statsRow = document.getElementById('stats-row');
+        if (!statsRow) {
+            statsRow = document.createElement('div');
+            statsRow.id = 'stats-row';
+            // Insert after buffer display
+            inputContainer.insertBefore(statsRow, keyboard);
+        }
+        statsRow.innerHTML = ''; // Clear previous
+
+        const costEl = document.createElement('div');
+        costEl.className = 'stat-cost';
+        costEl.textContent = `Cost: -$${prediction.cost.toFixed(2)}`;
+
+        const incomeEl = document.createElement('div');
+        incomeEl.className = 'stat-income';
+        incomeEl.textContent = `Income: +$${prediction.income.toFixed(2)}`;
+
+        const profitEl = document.createElement('div');
+        if (prediction.profit >= 0) {
+            profitEl.className = 'stat-profit-pos';
+        } else {
+            profitEl.className = 'stat-profit-neg';
+        }
+        profitEl.textContent = `Profit: $${prediction.profit.toFixed(2)}`;
+
+        statsRow.appendChild(costEl);
+        statsRow.appendChild(incomeEl);
+        statsRow.appendChild(profitEl);
+
 
         const rows = [
             "QWERTYUIOP",
@@ -116,9 +151,13 @@ export const ui = {
             "ZXCVBNM"
         ];
 
-        rows.forEach(rowString => {
+        rows.forEach((rowString, index) => {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'keyboard-row';
+
+            // If it's the last row, we might want to add special keys?
+            // Or add them after the letters?
+            // "Append two special keys to the end of the keyboard logic"
 
             for (let char of rowString) {
                 const keyBtn = document.createElement('div');
@@ -145,6 +184,24 @@ export const ui = {
 
                 rowDiv.appendChild(keyBtn);
             }
+
+            // Append Backspace and Enter to the last row
+            if (index === rows.length - 1) {
+                // Backspace
+                const backBtn = document.createElement('div');
+                backBtn.className = 'key key-action';
+                backBtn.textContent = '⌫';
+                backBtn.onclick = () => InputHandler.handleVirtualKey('BACKSPACE');
+                rowDiv.appendChild(backBtn);
+
+                // Enter
+                const enterBtn = document.createElement('div');
+                enterBtn.className = 'key key-submit';
+                enterBtn.textContent = '⏎';
+                enterBtn.onclick = () => InputHandler.handleVirtualKey('ENTER');
+                rowDiv.appendChild(enterBtn);
+            }
+
             keyboard.appendChild(rowDiv);
         });
     },

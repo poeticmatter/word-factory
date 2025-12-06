@@ -3,9 +3,21 @@ import { ui } from './ui.js';
 import { state } from './state.js';
 
 export const InputHandler = {
-    handleVirtualKey(char) {
-        if (state.buffer.length < 5) {
-            state.buffer += char;
+    handleVirtualKey(key) {
+        if (key === 'BACKSPACE') {
+            state.buffer = state.buffer.slice(0, -1);
+            ui.render(state);
+            return;
+        }
+
+        if (key === 'ENTER') {
+            GameLogic.processTurn(state);
+            ui.render(state);
+            return;
+        }
+
+        if (state.buffer.length < 5 && key.length === 1) {
+            state.buffer += key;
             ui.render(state);
         }
     },
