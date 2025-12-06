@@ -13,6 +13,7 @@
         <div id="hud">
           <div class="hud-item">Cash: $<span id="cash-display">0.00</span></div>
           <div class="hud-item">Turn: <span id="turn-display">0</span></div>
+          <button id="help-btn" class="icon-btn">?</button>
         </div>
       </header>
 
@@ -25,6 +26,26 @@
           <!-- Game controls and input will go here -->
         </section>
       </main>
+    </div>
+
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>How to Play</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    <li><strong>Goal:</strong> Satisfy customers before they leave!</li>
+                    <li><strong>Constraints:</strong> Each customer wants a specific letter in a specific spot (e.g., Starts with 'A').</li>
+                    <li><strong>Economy:</strong> Buying letters raises their price (Inflation). Waiting lowers prices (Deflation).</li>
+                    <li><strong>Combos:</strong> Try to satisfy 2 or 3 customers with a single word to maximize profit!</li>
+                    <li><strong>Game Over:</strong> If a customer waits too long (0 Hearts), they leave and the slot is DESTROYED.</li>
+                </ul>
+                <p><em>Tip: Don't spend more than you earn!</em></p>
+                <button id="start-btn">Got it!</button>
+            </div>
+        </div>
     </div>
     <script type="module" src="src/main.js"></script>
   </body>

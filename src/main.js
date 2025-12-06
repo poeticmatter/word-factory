@@ -17,6 +17,9 @@ async function initApp() {
     await Dictionary.loadDictionary();
     await loadReviews();
 
+    // Initialize UI listeners (Modal, etc.)
+    ui.init();
+
     // Initialize the game state
     state.init();
 

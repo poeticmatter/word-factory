@@ -66,8 +66,8 @@ export const ui = {
                 price.textContent = `$${customer.willingPrice.toFixed(2)}`;
 
                 const patience = document.createElement('div');
-                patience.className = 'patience-text';
-                patience.textContent = `Patience: ${customer.patience}`;
+                patience.className = 'patience-hearts';
+                patience.textContent = '❤️'.repeat(customer.patience);
 
                 info.appendChild(price);
                 info.appendChild(patience);
@@ -227,6 +227,26 @@ export const ui = {
 
             keyboard.appendChild(rowDiv);
         });
+    },
+
+    init() {
+        const modal = document.getElementById('help-modal');
+        const helpBtn = document.getElementById('help-btn');
+        const closeBtn = document.querySelector('.close-btn');
+        const startBtn = document.getElementById('start-btn');
+
+        function openModal() { modal.classList.remove('hidden'); }
+        function closeModal() { modal.classList.add('hidden'); }
+
+        if (helpBtn) helpBtn.onclick = openModal;
+        if (closeBtn) closeBtn.onclick = closeModal;
+        if (startBtn) startBtn.onclick = closeModal;
+
+        // Auto-Show on First Visit
+        if (!localStorage.getItem('hasSeenHelp')) {
+            openModal();
+            localStorage.setItem('hasSeenHelp', 'true');
+        }
     },
 
     render(state) {
