@@ -45,105 +45,80 @@ h1 {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.customers-grid {
+/* The Main List Container */
+/* Changed #customer-container to #customers-container to match HTML ID */
+#customers-container {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    min-height: 200px;
-}
-
-.customer-card {
-    background: #ffffff;
-    border: 1px solid #e1e1e1;
-    border-radius: 8px;
-    width: 200px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle box-shadow */
-    transition: transform 0.2s;
-}
-
-.customer-card:hover {
-    transform: translateY(-5px);
-}
-
-.portrait {
-    width: 100px;
-    height: 100px;
-    background-color: #eee;
-    border-radius: 50%;
-    margin-bottom: 15px;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.portrait img {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-}
-
-.customer-info {
-    text-align: center;
+    flex-direction: column; /* Stacks items vertically like a list */
+    gap: 12px;
     width: 100%;
+    max-width: 600px; /* Keep it readable */
+    margin: 0 auto; /* Center the list */
 }
 
-/* New Slot Styles */
+/* The Horizontal Bar (Customer Item) */
+.customer-card {
+    display: flex;
+    flex-direction: row; /* Forces horizontal layout */
+    align-items: center; /* Vertically center content */
+    justify-content: space-between; /* Spread items out */
+
+    background: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    height: 80px; /* Fixed height for consistency */
+}
+
+/* Avatar Adjustment */
+.customer-card img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%; /* Circle */
+    margin-right: 15px;
+}
+
+/* The Slot Container (The Word Boxes) */
 .slot-row {
     display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-bottom: 10px;
+    gap: 5px;
+    margin: 0 20px; /* Spacing from avatar and price */
 }
 
 .letter-slot {
-    width: 30px; /* Reduced from requested 40px to fit 200px card width. 5*30 + 4*8 = 150 + 32 = 182px, close to 200px - padding */
+    width: 30px;
     height: 30px;
-    border: 2px solid #ccc;
+    border: 2px solid #ddd;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     font-weight: bold;
-    font-size: 1.2em;
-    color: #333;
-    border-radius: 4px;
+    font-family: monospace;
+    font-size: 1.2rem;
 }
 
 .slot-active {
     border-color: #333;
-    background-color: #f0f0f0;
+    background-color: #f9f9f9;
+}
+
+/* Price & Patience Styling */
+.customer-info {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .price {
     font-size: 1.1em;
     color: #27ae60;
     font-weight: bold;
-    margin-bottom: 10px;
 }
 
-.patience {
-    display: flex;
-    justify-content: center;
-    gap: 2px;
-    color: #e74c3c;
-    font-size: 1.2em;
-}
-
-.dot.filled {
-    color: #e74c3c;
-}
-
-.dot.empty {
-    color: #ccc;
+.patience-text {
+    font-size: 0.9em;
+    color: #7f8c8d;
 }
 
 .input-area {

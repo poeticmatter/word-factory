@@ -12,28 +12,13 @@ export const ui = {
             const card = document.createElement('div');
             card.className = 'customer-card';
 
-            // Portrait
-            const portrait = document.createElement('div');
-            portrait.className = 'portrait';
+            // 1. Avatar (Image) - Direct child as per CSS structure inference
             const img = document.createElement('img');
             img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
             img.alt = 'Customer Portrait';
-            portrait.appendChild(img);
+            card.appendChild(img);
 
-            // Info
-            const info = document.createElement('div');
-            info.className = 'customer-info';
-
-            // Constraint Row (Replaces old Target Letter + Constraint Text)
-            // The requirement says: "Display the word constraint as a row of 5 square tiles (boxes)"
-            // It seems we might want to remove the separate large "Target Letter" and "Constraint Text"
-            // and replace them with this row, or keep the Target Letter?
-            // "Goal: Update the Customer UI to display the word constraint as a row of 5 square tiles (boxes), rather than text underscores."
-            // "In renderCustomers, modify how the Constraint is generated:"
-            // The previous code had `targetLetter` and `constraintText`.
-            // The prompt says "If i === customer.constraint.index: Set the innerText to customer.constraint.char"
-            // So the letter is now inside the box.
-
+            // 2. The Word Slots (The row of boxes)
             const slotRow = document.createElement('div');
             slotRow.className = 'slot-row';
 
@@ -46,32 +31,28 @@ export const ui = {
                 }
                 slotRow.appendChild(slot);
             }
+            card.appendChild(slotRow);
+
+            // 3. Info Container (Price and Patience Text)
+            // Grouped in .customer-info as implied by CSS
+            const info = document.createElement('div');
+            info.className = 'customer-info';
 
             // Price
             const price = document.createElement('div');
             price.className = 'price';
             price.textContent = `$${customer.willingPrice.toFixed(2)}`;
 
-            // Patience
+            // Patience Text
             const patience = document.createElement('div');
-            patience.className = 'patience';
+            patience.className = 'patience-text'; // New class or just use text
+            patience.textContent = `Patience: ${customer.patience}`;
 
-            let patienceHtml = '';
-            for (let i = 0; i < 5; i++) {
-                if (i < customer.patience) {
-                    patienceHtml += '<span class="dot filled">●</span>';
-                } else {
-                    patienceHtml += '<span class="dot empty">○</span>';
-                }
-            }
-            patience.innerHTML = patienceHtml;
-
-            info.appendChild(slotRow);
             info.appendChild(price);
             info.appendChild(patience);
 
-            card.appendChild(portrait);
             card.appendChild(info);
+
             container.appendChild(card);
         });
     },
