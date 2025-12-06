@@ -21,7 +21,9 @@ export const ui = {
             if (i >= state.maxSlots) {
                 const reviewCard = document.createElement('div');
                 reviewCard.className = 'review-card';
-                reviewCard.textContent = "★☆☆☆☆ - Walked Out";
+                // Retrieve specific review or fallback
+                const reviewText = state.deadSlotReviews[i] || "Walked Out";
+                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
                 container.appendChild(reviewCard);
                 continue;
             }
