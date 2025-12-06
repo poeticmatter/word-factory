@@ -97,17 +97,30 @@ h1 {
     width: 100%;
 }
 
-.target-letter {
-    font-size: 2em;
-    font-weight: bold;
-    color: #2c3e50;
-    margin-bottom: 5px;
+/* New Slot Styles */
+.slot-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
-.constraint-text {
-    font-size: 0.9em;
-    color: #7f8c8d;
-    margin-bottom: 10px;
+.letter-slot {
+    width: 30px; /* Reduced from requested 40px to fit 200px card width. 5*30 + 4*8 = 150 + 32 = 182px, close to 200px - padding */
+    height: 30px;
+    border: 2px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #333;
+    border-radius: 4px;
+}
+
+.slot-active {
+    border-color: #333;
+    background-color: #f0f0f0;
 }
 
 .price {

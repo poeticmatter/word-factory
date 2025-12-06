@@ -24,15 +24,28 @@ export const ui = {
             const info = document.createElement('div');
             info.className = 'customer-info';
 
-            // Target Letter (Large, bold)
-            const targetLetter = document.createElement('div');
-            targetLetter.className = 'target-letter';
-            targetLetter.textContent = customer.constraint.letter;
+            // Constraint Row (Replaces old Target Letter + Constraint Text)
+            // The requirement says: "Display the word constraint as a row of 5 square tiles (boxes)"
+            // It seems we might want to remove the separate large "Target Letter" and "Constraint Text"
+            // and replace them with this row, or keep the Target Letter?
+            // "Goal: Update the Customer UI to display the word constraint as a row of 5 square tiles (boxes), rather than text underscores."
+            // "In renderCustomers, modify how the Constraint is generated:"
+            // The previous code had `targetLetter` and `constraintText`.
+            // The prompt says "If i === customer.constraint.index: Set the innerText to customer.constraint.char"
+            // So the letter is now inside the box.
 
-            // Constraint Text
-            const constraintText = document.createElement('div');
-            constraintText.className = 'constraint-text';
-            constraintText.textContent = `Slot ${customer.constraint.index + 1}`; // Display as 1-based index for user friendliness? Prompt said "e.g., 'Slot 3'". Usually 1-based in UI.
+            const slotRow = document.createElement('div');
+            slotRow.className = 'slot-row';
+
+            for (let i = 0; i < 5; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'letter-slot';
+                if (i === customer.constraint.index) {
+                    slot.textContent = customer.constraint.letter;
+                    slot.classList.add('slot-active');
+                }
+                slotRow.appendChild(slot);
+            }
 
             // Price
             const price = document.createElement('div');
@@ -42,9 +55,7 @@ export const ui = {
             // Patience
             const patience = document.createElement('div');
             patience.className = 'patience';
-            // Render 5 dots or hearts. Let's use dots for now, filled vs empty?
-            // "Render 5 dots or hearts". If patience is 5, 5 filled?
-            // Assuming max patience is 5 (START_PATIENCE).
+
             let patienceHtml = '';
             for (let i = 0; i < 5; i++) {
                 if (i < customer.patience) {
@@ -55,8 +66,7 @@ export const ui = {
             }
             patience.innerHTML = patienceHtml;
 
-            info.appendChild(targetLetter);
-            info.appendChild(constraintText);
+            info.appendChild(slotRow);
             info.appendChild(price);
             info.appendChild(patience);
 
