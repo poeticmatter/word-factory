@@ -1,0 +1,8 @@
+export const GAME_CONFIG = {
+    START_CASH: 100.00,
+    MAX_SLOTS: 5,
+    START_PATIENCE: 5,
+    INFLATION_RATE: 1.00,
+    DEFLATION_RATE: 0.20,
+    BASE_REWARD: 2.50
+};
