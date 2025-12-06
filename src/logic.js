@@ -1,4 +1,4 @@
-import { GAME_CONFIG, SCRABBLE_DISTRIBUTION } from './config.js';
+import { GAME_CONFIG, SCRABBLE_DISTRIBUTION, INVALID_POSITIONS } from './config.js';
 
 export const GameLogic = {
     fillTileBag(state) {
@@ -9,10 +9,13 @@ export const GameLogic = {
             }
         }
 
-        // Fisher-Yates shuffle
-        for (let i = state.tileBag.length - 1; i > 0; i--) {
+        this.shuffle(state.tileBag);
+    },
+
+    shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [state.tileBag[i], state.tileBag[j]] = [state.tileBag[j], state.tileBag[i]];
+            [array[i], array[j]] = [array[j], array[i]];
         }
     },
 
@@ -23,12 +26,36 @@ export const GameLogic = {
         return state.tileBag.pop();
     },
 
+    drawValidTile(state, slotIndex) {
+        let heldTiles = [];
+
+        while (true) {
+            const tile = this.drawTile(state);
+
+            // Check validity
+            // Check if INVALID_POSITIONS has an entry for this slotIndex
+            if (INVALID_POSITIONS[slotIndex] && INVALID_POSITIONS[slotIndex].includes(tile)) {
+                heldTiles.push(tile);
+                continue;
+            }
+
+            // If we are here, the tile is valid
+            // Put back held tiles
+            if (heldTiles.length > 0) {
+                state.tileBag.push(...heldTiles);
+                this.shuffle(state.tileBag);
+            }
+
+            return tile;
+        }
+    },
+
     generateCustomer(state, slotIndex) {
         if (state.activeSlots.length >= state.maxSlots) {
             return null;
         }
 
-        const letter = this.drawTile(state);
+        const letter = this.drawValidTile(state, slotIndex);
         const index = slotIndex; // Fixed position based on slot
 
         const currentLetterCost = state.letterCosts[letter];
@@ -51,15 +78,6 @@ export const GameLogic = {
     },
 
     initializeGame(state) {
-        // "Ensure you pass the specific index of the empty slot to generateCustomer"
-        // We need to fill empty slots up to maxSlots.
-        // We should identify WHICH slots (0-4) are missing if we want strict fixed positioning,
-        // BUT maxSlots can decrease.
-        // If maxSlots decreases, we effectively lose the ability to fill the highest slot indices?
-        // Or any slot?
-        // Let's adopt a strategy: Fill ANY missing index in 0..4 as long as we haven't reached maxSlots count.
-        // This keeps the "Slot N wants index N" logic valid.
-
         const usedIndices = state.activeSlots.map(c => c.constraint.index);
         const allIndices = [0, 1, 2, 3, 4]; // Assumes MAX_SLOTS is 5
         const availableIndices = allIndices.filter(i => !usedIndices.includes(i));

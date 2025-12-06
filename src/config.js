@@ -14,3 +14,10 @@ export const SCRABBLE_DISTRIBUTION = {
   'J': 1, 'K': 1, 'L': 4, 'M': 2, 'N': 6, 'O': 8, 'P': 2, 'Q': 1, 'R': 6,
   'S': 4, 'T': 6, 'U': 4, 'V': 2, 'W': 2, 'X': 1, 'Y': 2, 'Z': 1
 };
+
+// 0-based Index mapping for 5-letter words
+export const INVALID_POSITIONS = {
+  0: ['X'],           // No words starting with X
+  3: ['Q'],           // No Q in the 4th slot (needs a U after it)
+  4: ['J', 'Q', 'V']  // No words ending in J, Q, V
+};
