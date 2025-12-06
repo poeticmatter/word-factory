@@ -1,32 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Word Auction</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <div id="app">
-        <header>
-            <h1>Word Auction</h1>
-            <div id="hud">
-                <div class="hud-item">Cash: $<span id="cash-display">0.00</span></div>
-                <div class="hud-item">Turn: <span id="turn-display">0</span></div>
-            </div>
-        </header>
+      <header>
+        <h1>Word Shop</h1>
+        <div id="hud">
+          <div class="hud-item">Cash: $<span id="cash-display">0.00</span></div>
+          <div class="hud-item">Turn: <span id="turn-display">0</span></div>
+        </div>
+      </header>
 
-        <main>
-            <section id="customers-container" class="customers-grid">
-                <!-- Customer cards will be injected here. -->
-            </section>
+      <main>
+        <section id="customers-container" class="customers-grid">
+          <!-- Customer cards will be injected here. -->
+        </section>
 
-            <section id="input-container" class="input-area">
-                <!-- Game controls and input will go here -->
-                <p>Input Area Placeholder</p>
-            </section>
-        </main>
+        <section id="input-container" class="input-area">
+          <!-- Game controls and input will go here -->
+        </section>
+      </main>
     </div>
     <script type="module" src="src/main.js"></script>
-</body>
+  </body>
 </html>
