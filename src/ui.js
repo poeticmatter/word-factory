@@ -155,9 +155,14 @@ export const ui = {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'keyboard-row';
 
-            // If it's the last row, we might want to add special keys?
-            // Or add them after the letters?
-            // "Append two special keys to the end of the keyboard logic"
+            // Row 3 (Index 2): Prepend Backspace
+            if (index === 2) {
+                const backBtn = document.createElement('div');
+                backBtn.className = 'key key-action';
+                backBtn.textContent = '⌫';
+                backBtn.onclick = () => InputHandler.handleVirtualKey('BACKSPACE');
+                rowDiv.appendChild(backBtn);
+            }
 
             for (let char of rowString) {
                 const keyBtn = document.createElement('div');
@@ -185,16 +190,8 @@ export const ui = {
                 rowDiv.appendChild(keyBtn);
             }
 
-            // Append Backspace and Enter to the last row
-            if (index === rows.length - 1) {
-                // Backspace
-                const backBtn = document.createElement('div');
-                backBtn.className = 'key key-action';
-                backBtn.textContent = '⌫';
-                backBtn.onclick = () => InputHandler.handleVirtualKey('BACKSPACE');
-                rowDiv.appendChild(backBtn);
-
-                // Enter
+            // Row 3 (Index 2): Append Enter
+            if (index === 2) {
                 const enterBtn = document.createElement('div');
                 enterBtn.className = 'key key-submit';
                 enterBtn.textContent = '⏎';
