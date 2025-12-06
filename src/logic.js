@@ -4,6 +4,7 @@ import {
   INVALID_POSITIONS,
 } from "./config.js";
 import { Dictionary } from "./dictionary.js";
+import { negativeReviews } from "./loader.js";
 
 export const GameLogic = {
   fillTileBag(state) {
@@ -208,7 +209,21 @@ export const GameLogic = {
     const originalCount = state.activeSlots.length;
     state.activeSlots = state.activeSlots.filter((c) => c.patience > 0);
     const departedCount = originalCount - state.activeSlots.length;
+
+    const oldMaxSlots = state.maxSlots;
     state.maxSlots = Math.max(0, state.maxSlots - departedCount);
+
+    // Assign reviews for newly dead slots
+    if (state.maxSlots < oldMaxSlots) {
+        for (let i = state.maxSlots; i < oldMaxSlots; i++) {
+            if (negativeReviews.length > 0) {
+                const randomReview = negativeReviews[Math.floor(Math.random() * negativeReviews.length)];
+                state.deadSlotReviews[i] = randomReview;
+            } else {
+                 state.deadSlotReviews[i] = "Walked Out";
+            }
+        }
+    }
 
     // Spawn
     this.initializeGame(state);

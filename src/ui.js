@@ -2,57 +2,83 @@ import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
 
+let previousCustomerIds = new Set();
+
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
     getInputContainer: () => document.getElementById('input-container'),
     getCashDisplay: () => document.getElementById('cash-display'),
     getTurnDisplay: () => document.getElementById('turn-display'),
 
-    renderCustomers(customers) {
+    renderCustomers(state) {
         const container = this.getCustomersContainer();
         container.innerHTML = '';
+        const customers = state.activeSlots;
 
-        customers.forEach(customer => {
-            const card = document.createElement('div');
-            card.className = 'customer-card';
-
-            const img = document.createElement('img');
-            img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
-            img.alt = 'Customer Portrait';
-            card.appendChild(img);
-
-            const slotRow = document.createElement('div');
-            slotRow.className = 'slot-row';
-
-            for (let i = 0; i < 5; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'letter-slot';
-                if (i === customer.constraint.index) {
-                    slot.textContent = customer.constraint.letter;
-                    slot.classList.add('slot-active');
-                }
-                slotRow.appendChild(slot);
+        // Loop 0 to 4 (Fixed size of 5)
+        for (let i = 0; i < 5; i++) {
+            // Condition B (The Graveyard)
+            if (i >= state.maxSlots) {
+                const reviewCard = document.createElement('div');
+                reviewCard.className = 'review-card';
+                // Retrieve specific review or fallback
+                const reviewText = state.deadSlotReviews[i] || "Walked Out";
+                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
+                container.appendChild(reviewCard);
+                continue;
             }
-            card.appendChild(slotRow);
 
-            const info = document.createElement('div');
-            info.className = 'customer-info';
+            // Condition A (Active Customer)
+            if (i < customers.length) {
+                const customer = customers[i];
+                const card = document.createElement('div');
+                card.className = 'customer-card';
 
-            const price = document.createElement('div');
-            price.className = 'price';
-            price.textContent = `$${customer.willingPrice.toFixed(2)}`;
+                // Check ID for entry animation
+                if (!previousCustomerIds.has(customer.id)) {
+                    card.classList.add('slide-in');
+                }
 
-            const patience = document.createElement('div');
-            patience.className = 'patience-text';
-            patience.textContent = `Patience: ${customer.patience}`;
+                const img = document.createElement('img');
+                img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
+                img.alt = 'Customer Portrait';
+                card.appendChild(img);
 
-            info.appendChild(price);
-            info.appendChild(patience);
+                const slotRow = document.createElement('div');
+                slotRow.className = 'slot-row';
 
-            card.appendChild(info);
+                for (let j = 0; j < 5; j++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'letter-slot';
+                    if (j === customer.constraint.index) {
+                        slot.textContent = customer.constraint.letter;
+                        slot.classList.add('slot-active');
+                    }
+                    slotRow.appendChild(slot);
+                }
+                card.appendChild(slotRow);
 
-            container.appendChild(card);
-        });
+                const info = document.createElement('div');
+                info.className = 'customer-info';
+
+                const price = document.createElement('div');
+                price.className = 'price';
+                price.textContent = `$${customer.willingPrice.toFixed(2)}`;
+
+                const patience = document.createElement('div');
+                patience.className = 'patience-text';
+                patience.textContent = `Patience: ${customer.patience}`;
+
+                info.appendChild(price);
+                info.appendChild(patience);
+                card.appendChild(info);
+
+                container.appendChild(card);
+            }
+        }
+
+        // Cleanup: Update previousCustomerIds with the current list
+        previousCustomerIds = new Set(customers.map(c => c.id));
     },
 
     renderHUD(state) {
@@ -205,7 +231,7 @@ export const ui = {
 
     render(state) {
         this.renderHUD(state);
-        this.renderCustomers(state.activeSlots);
+        this.renderCustomers(state);
         this.renderKeyboard(state);
     }
 };

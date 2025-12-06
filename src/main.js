@@ -4,6 +4,7 @@ import { ui } from './ui.js';
 import { GameLogic } from './logic.js';
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
+import { loadReviews } from './loader.js';
 
 console.log("Game System Initialized");
 
@@ -14,6 +15,7 @@ async function initApp() {
     // ui.renderLoading();
 
     await Dictionary.loadDictionary();
+    await loadReviews();
 
     // Initialize the game state
     state.init();
