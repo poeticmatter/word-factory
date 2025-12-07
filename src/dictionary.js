@@ -28,5 +28,11 @@ export const Dictionary = {
 
     isValid(word) {
         return validWords.has(word.toUpperCase());
+    },
+
+    getRandomWord() {
+        if (validWords.size === 0) return "HELLO"; // Fallback
+        const wordsArray = Array.from(validWords);
+        return wordsArray[Math.floor(Math.random() * wordsArray.length)];
     }
 };

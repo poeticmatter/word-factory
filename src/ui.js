@@ -31,8 +31,10 @@ export const ui = {
             // Condition A (Active Customer)
             if (i < customers.length) {
                 const customer = customers[i];
+                const isCritic = customer.type === 'critic';
+
                 const card = document.createElement('div');
-                card.className = 'customer-card';
+                card.className = isCritic ? 'customer-card critic-card' : 'customer-card';
 
                 // Check ID for entry animation
                 if (!previousCustomerIds.has(customer.id)) {
@@ -40,8 +42,11 @@ export const ui = {
                 }
 
                 const img = document.createElement('img');
+                // Use a generated seed, but maybe consistent for critic to look distinct?
+                // Style.css says .critic-portrait { filter: grayscale(100%) }
                 img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
-                img.alt = 'Customer Portrait';
+                img.alt = isCritic ? 'Critic Portrait' : 'Customer Portrait';
+                if (isCritic) img.className = 'critic-portrait';
                 card.appendChild(img);
 
                 const slotRow = document.createElement('div');
@@ -50,9 +55,22 @@ export const ui = {
                 for (let j = 0; j < 5; j++) {
                     const slot = document.createElement('div');
                     slot.className = 'letter-slot';
-                    if (j === customer.constraint.index) {
-                        slot.textContent = customer.constraint.letter;
-                        slot.classList.add('slot-active');
+
+                    if (isCritic) {
+                        // CRITIC DISPLAY LOGIC
+                        if (customer.lockedState[j]) {
+                            slot.textContent = customer.lockedState[j];
+                            slot.classList.add('box-locked');
+                        } else if (state.buffer[j]) {
+                            slot.textContent = state.buffer[j];
+                            slot.classList.add('box-mirror');
+                        }
+                    } else {
+                        // STANDARD CUSTOMER LOGIC
+                        if (j === customer.constraint.index) {
+                            slot.textContent = customer.constraint.letter;
+                            slot.classList.add('slot-active');
+                        }
                     }
                     slotRow.appendChild(slot);
                 }
@@ -61,15 +79,25 @@ export const ui = {
                 const info = document.createElement('div');
                 info.className = 'customer-info';
 
-                const price = document.createElement('div');
-                price.className = 'price';
-                price.textContent = `$${customer.willingPrice.toFixed(2)}`;
+                if (isCritic) {
+                     // Critic Info
+                     const label = document.createElement('div');
+                     label.className = 'price'; // Re-use styling or add new
+                     label.textContent = "CRITIC";
+                     label.style.color = "#3f51b5"; // Match border
+                     info.appendChild(label);
+                } else {
+                     // Standard Info
+                     const price = document.createElement('div');
+                     price.className = 'price';
+                     price.textContent = `$${customer.willingPrice.toFixed(2)}`;
+                     info.appendChild(price);
+                }
 
                 const patience = document.createElement('div');
                 patience.className = 'patience-hearts';
                 patience.textContent = '❤️'.repeat(customer.patience);
 
-                info.appendChild(price);
                 info.appendChild(patience);
                 card.appendChild(info);
 
@@ -194,11 +222,19 @@ export const ui = {
                 const keyBtn = document.createElement('div');
                 keyBtn.className = 'key';
 
-                const cost = state.letterCosts[char];
-
-                if (cost <= 1.00) keyBtn.classList.add('key-cheap');
-                else if (cost > 1.00 && cost < 3.00) keyBtn.classList.add('key-mid');
-                else if (cost >= 3.00) keyBtn.classList.add('key-expensive');
+                // Check for Critic Hints (Priority)
+                const hint = state.keyboardHints && state.keyboardHints[char];
+                if (hint) {
+                    if (hint === 'correct') keyBtn.classList.add('key-correct');
+                    else if (hint === 'present') keyBtn.classList.add('key-present');
+                    else if (hint === 'absent') keyBtn.classList.add('key-absent');
+                } else {
+                    // Standard Price Coloring
+                    const cost = state.letterCosts[char];
+                    if (cost <= 1.00) keyBtn.classList.add('key-cheap');
+                    else if (cost > 1.00 && cost < 3.00) keyBtn.classList.add('key-mid');
+                    else if (cost >= 3.00) keyBtn.classList.add('key-expensive');
+                }
 
                 const charSpan = document.createElement('div');
                 charSpan.className = 'key-char';
