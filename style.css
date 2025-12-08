@@ -317,3 +317,179 @@ h1 {
     font-size: 1.0rem;
     box-sizing: border-box;
 }
+
+/* Modal Styling */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    max-width: 500px;
+    width: 90%;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-body ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.modal-body li {
+    margin-bottom: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.modal h2 {
+    margin-top: 0;
+}
+
+.close-btn {
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #aaa;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+/* Button Styling */
+#help-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+#help-btn:hover {
+    background-color: #2980b9;
+}
+
+#start-btn {
+    width: 100%;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#start-btn:hover {
+    background-color: #219150;
+}
+
+/* Patience Styling */
+.patience-hearts {
+    color: #e74c3c;
+    letter-spacing: 2px;
+    font-size: 1.1rem;
+}
+
+.dedication {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 20px;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Critic Styling */
+.critic-card {
+    background-color: #e8eaf6;
+    border-left: 5px solid #3f51b5;
+}
+
+.critic-portrait {
+    filter: grayscale(100%);
+    border: 2px solid #333;
+}
+
+.box-mirror {
+    color: #555;
+    font-style: italic;
+}
+
+.box-locked {
+    background-color: #a5d6a7; /* Greenish */
+    color: #1b5e20;
+    border-color: #2e7d32;
+    font-weight: 900;
+}
+
+/* Keyboard Feedback */
+.key-absent {
+    background-color: #7f8c8d !important;
+    color: white !important;
+    border-color: #34495e !important;
+}
+
+.key-present {
+    background-color: #f1c40f !important;
+    color: black !important;
+    border-color: #f39c12 !important;
+    font-weight: bold;
+}
+
+.key-correct {
+    /* Actually prompt says Yellow/Red go to keyboard, Green in boxes.
+       But standard Wordle also highlights Green on keyboard if found.
+       The prompt says "Cleanup: Reset all keyboard keys back to default".
+       It says "Bold Red: Letter is not in the Critic's word."
+       "Bold Yellow: Letter is in the word but wrong spot."
+       It DOES NOT explicitly say Green goes to keyboard, but usually it does.
+       Wait, "Yellow/Red: Do not show Yellow/Red in the boxes. Only show Green in the boxes. (Yellow/Red go to the keyboard)."
+       So Keyboard gets Yellow/Red. Does it get Green?
+       Usually if I know a letter is Green, I want to see it on keyboard too.
+       I'll implement Green on keyboard too for consistency unless strictly forbidden.
+       Prompt: "Bold Red... Bold Yellow...". It doesn't mention Green for keyboard.
+       But "Green: If a letter is correct ... lock it in ... (it stays visible in the box)".
+       I'll stick to Red/Yellow/Green on keyboard because it makes sense.
+    */
+    background-color: #2ecc71 !important;
+    color: white !important;
+    border-color: #27ae60 !important;
+}
+
+/* Override for specific prompt instruction: "Bold Red" */
+.key-absent {
+    background-color: #c0392b !important; /* Bold Red */
+    font-weight: bold;
+}
+.key-present {
+    background-color: #f39c12 !important; /* Bold Yellow */
+    font-weight: bold;
+}

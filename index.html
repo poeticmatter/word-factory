@@ -13,6 +13,7 @@
         <div id="hud">
           <div class="hud-item">Cash: $<span id="cash-display">0.00</span></div>
           <div class="hud-item">Turn: <span id="turn-display">0</span></div>
+          <button id="help-btn" class="icon-btn">?</button>
         </div>
       </header>
 
@@ -26,6 +27,26 @@
         </section>
       </main>
     </div>
+
     <script type="module" src="src/main.js"></script>
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>HOW TO PLAY</h3>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    <li><strong>Fill Orders:</strong> Build words that match customer requests (e.g., "Starts with A").</li>
+                    <li><strong>The Market:</strong> Buying letters spikes the cost. Waiting drops it. <strong>Buy low!</strong></li>
+                    <li><strong>Combos:</strong> Satisfy 2+ orders with one word. You buy the letters once, but get paid by everyone!</li>
+                    <li><strong>Survival:</strong> Customers lose <strong>Hearts</strong> over time. If they run out, they leave a bad review, and you'll get one less customer.</li>
+                </ul>
+                <p><em>Game Over if you lose all seats or run out of cash!</em></p>
+                <button id="start-btn">Got it!</button>
+                <p class="dedication">Dedicated to the memory of Jim, a dear friend, who would have loved this game.</p>
+            </div>
+        </div>
+    </div>
   </body>
 </html>
