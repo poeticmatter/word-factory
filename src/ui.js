@@ -57,13 +57,35 @@ export const ui = {
                     slot.className = 'letter-slot';
 
                     if (isCritic) {
+                        slot.innerHTML = ''; // Clear previous content
+                        slot.classList.add('critic-slot');
                         // CRITIC DISPLAY LOGIC
-                        if (customer.lockedState[j]) {
-                            slot.textContent = customer.lockedState[j];
-                            slot.classList.add('box-locked');
-                        } else if (state.buffer[j]) {
-                            slot.textContent = state.buffer[j];
-                            slot.classList.add('box-mirror');
+                        const criticStatus = GameLogic.getCriticStatus(customer);
+                        const status = criticStatus[j];
+
+                        if (status.status === 'solved') {
+                             const mainLetter = document.createElement('div');
+                             mainLetter.className = 'main-letter';
+                             mainLetter.textContent = status.letter;
+                             slot.appendChild(mainLetter);
+                        } else {
+                             // Unsolved: Show Pencil Grid or Mirror
+                             if (state.buffer[j]) {
+                                 slot.textContent = state.buffer[j];
+                                 slot.classList.add('box-mirror');
+                             } else {
+                                 const grid = document.createElement('div');
+                                 grid.className = 'pencil-grid';
+
+                                 // Sort pencil marks for consistency
+                                 status.pencilMarks.sort().forEach(mark => {
+                                      const markSpan = document.createElement('div');
+                                      markSpan.className = 'pencil-mark';
+                                      markSpan.textContent = mark;
+                                      grid.appendChild(markSpan);
+                                 });
+                                 slot.appendChild(grid);
+                             }
                         }
                     } else {
                         // STANDARD CUSTOMER LOGIC

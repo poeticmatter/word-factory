@@ -73,10 +73,6 @@ export const GameLogic = {
     if (critic) {
         let attempts = 0;
         while (letter === critic.secretWord[slotIndex] && attempts < 10) {
-            // Draw again (put back and shuffle? drawValidTile handles bag mechanics, but we need to reject this specific letter)
-            // drawValidTile doesn't support exclusion.
-            // We can just draw another one.
-            // Ideally we push the invalid one back.
             state.tileBag.push(letter);
             this.shuffle(state.tileBag);
             letter = this.drawValidTile(state, slotIndex);
@@ -164,7 +160,7 @@ export const GameLogic = {
               id: seed,
               seed: seed,
               secretWord: secretWord,
-              lockedState: [null, null, null, null, null],
+              guesses: [],
               patience: GAME_CONFIG.START_PATIENCE + (state.globalPatienceBonus || 0),
               constraint: { index: slotIndex },
               willingPrice: 0,
@@ -176,6 +172,74 @@ export const GameLogic = {
           }
       }
     }
+  },
+
+  getCriticStatus(critic) {
+    // Step A: Find Greens (Confirmed)
+    const slots = Array(5).fill(null).map(() => ({ status: 'unsolved', letter: null, pencilMarks: [] }));
+
+    // Check all guesses for Greens
+    if (critic.guesses) {
+        critic.guesses.forEach(guess => {
+            for (let i = 0; i < 5; i++) {
+                if (guess[i] === critic.secretWord[i]) {
+                    slots[i].status = 'solved';
+                    slots[i].letter = guess[i];
+                }
+            }
+        });
+    }
+
+    // Step B: Find Yellows (Candidates)
+    const secretCounts = {};
+    for (let char of critic.secretWord) {
+        secretCounts[char] = (secretCounts[char] || 0) + 1;
+    }
+
+    // Decrement for solved slots
+    for (let i = 0; i < 5; i++) {
+        if (slots[i].status === 'solved') {
+            const char = slots[i].letter;
+            if (secretCounts[char] > 0) {
+                secretCounts[char]--;
+            }
+        }
+    }
+
+    // Determine Candidates
+    const candidates = [];
+    for (const [char, count] of Object.entries(secretCounts)) {
+        if (count > 0) {
+            candidates.push(char);
+        }
+    }
+
+    // Step C: Calculate Pencil Marks
+    for (let i = 0; i < 5; i++) {
+        if (slots[i].status === 'unsolved') {
+            // For every Candidate L
+            candidates.forEach(L => {
+                // Check History: Has player guessed L at position i?
+                let triedAtPos = false;
+                if (critic.guesses) {
+                    for (let guess of critic.guesses) {
+                        if (guess[i] === L) {
+                            triedAtPos = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!triedAtPos) {
+                     if (!slots[i].pencilMarks.includes(L)) {
+                         slots[i].pencilMarks.push(L);
+                     }
+                }
+            });
+        }
+    }
+
+    return slots;
   },
 
   calculatePrediction(state, currentBuffer) {
@@ -254,7 +318,11 @@ export const GameLogic = {
              // Reset Keyboard
              state.keyboardHints = {};
         } else {
-             // Update Locked State & Keyboard Hints
+             // Push to history
+             if (!critic.guesses) critic.guesses = [];
+             critic.guesses.push(state.buffer);
+
+             // Update Keyboard Hints
              const word = state.buffer;
              const secret = critic.secretWord;
 
@@ -263,10 +331,8 @@ export const GameLogic = {
              const wordArr = word.split('');
              const unmatchedSecret = [];
 
-             // Lock correct letters
              for (let i=0; i<5; i++) {
                  if (wordArr[i] === secretArr[i]) {
-                     critic.lockedState[i] = wordArr[i];
                      state.keyboardHints[wordArr[i]] = 'correct';
                      secretArr[i] = null; // Mark handled
                  } else {
@@ -280,12 +346,9 @@ export const GameLogic = {
                  if (state.keyboardHints[char] === 'correct') continue; // Already green
 
                  if (unmatchedSecret.includes(char)) {
-                      // Only mark yellow if not already green elsewhere (Wordle logic)
-                      // Simple version: If in unmatched, mark present.
                       if (state.keyboardHints[char] !== 'correct') {
                            state.keyboardHints[char] = 'present';
                       }
-                      // Remove one instance
                       const idx = unmatchedSecret.indexOf(char);
                       if (idx > -1) unmatchedSecret.splice(idx, 1);
                  } else {
