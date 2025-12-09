@@ -4,6 +4,56 @@ import { GameLogic } from './logic.js';
 
 let previousCustomerIds = new Set();
 
+// Helper to determine Critic Slot State
+function getCriticSlotState(critic, slotIndex) {
+    // Step A: Find Solved
+    // Loop through sessionGuesses. If a guess has the correct letter in the correct spot.
+    for (let guess of critic.sessionGuesses) {
+        if (guess[slotIndex] === critic.secretWord[slotIndex]) {
+            return {
+                status: 'solved',
+                letter: critic.secretWord[slotIndex]
+            };
+        }
+    }
+
+    // Step B: Find Clues (Discovered Letters)
+    // A letter is discovered ONLY IF it appears in a word inside sessionGuesses AND it exists in the secretWord.
+    const discoveredLetters = new Set();
+    for (let guess of critic.sessionGuesses) {
+        for (let char of guess) {
+            if (critic.secretWord.includes(char)) {
+                discoveredLetters.add(char);
+            }
+        }
+    }
+
+    // Step C: Draw Pencil Marks
+    // For every unsolved slot i (which is here, since we didn't return 'solved')
+    const pencilMarks = [];
+    discoveredLetters.forEach(char => {
+        // Negative Constraint: Check if the player has ever guessed this letter at index i in their sessionGuesses.
+        // If they HAVE guessed it there (and it wasn't a match), do NOT show the mark.
+        let guessedAtThisSlot = false;
+        for (let guess of critic.sessionGuesses) {
+            if (guess[slotIndex] === char) {
+                guessedAtThisSlot = true;
+                break;
+            }
+        }
+
+        if (!guessedAtThisSlot) {
+            pencilMarks.push(char);
+        }
+    });
+
+    return {
+        status: 'unsolved',
+        pencilMarks: pencilMarks.sort()
+    };
+}
+
+
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
     getInputContainer: () => document.getElementById('input-container'),
@@ -42,8 +92,6 @@ export const ui = {
                 }
 
                 const img = document.createElement('img');
-                // Use a generated seed, but maybe consistent for critic to look distinct?
-                // Style.css says .critic-portrait { filter: grayscale(100%) }
                 img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
                 img.alt = isCritic ? 'Critic Portrait' : 'Customer Portrait';
                 if (isCritic) img.className = 'critic-portrait';
@@ -58,13 +106,34 @@ export const ui = {
 
                     if (isCritic) {
                         // CRITIC DISPLAY LOGIC
-                        if (customer.lockedState[j]) {
-                            slot.textContent = customer.lockedState[j];
-                            slot.classList.add('box-locked');
-                        } else if (state.buffer[j]) {
-                            slot.textContent = state.buffer[j];
-                            slot.classList.add('box-mirror');
+                        const slotState = getCriticSlotState(customer, j);
+
+                        if (slotState.status === 'solved') {
+                             slot.textContent = slotState.letter;
+                             slot.classList.add('box-solved');
+                        } else {
+                            // Pencil Marks
+                            if (slotState.pencilMarks.length > 0) {
+                                slot.classList.add('pencil-grid');
+                                slotState.pencilMarks.forEach(char => {
+                                    const mark = document.createElement('div');
+                                    mark.className = 'pencil-mark';
+                                    mark.textContent = char;
+                                    slot.appendChild(mark);
+                                });
+                            } else if (state.buffer[j]) {
+                                // Mirror user input if no pencil marks and unsolved?
+                                // Prompt doesn't specify if we still mirror user input for critic.
+                                // "Update the Critic's DOM to have 5 slots... Main Letter... Pencil Grid"
+                                // Usually in Wordle clones, you see what you type.
+                                // But here the typing happens in the buffer area, not in the customer slot.
+                                // The customer slot shows the constraint.
+                                // For Critic, it shows the known state.
+                                // I think it's safer NOT to mirror buffer here, to keep it clean as "Critic State".
+                                // The buffer display is separate at the bottom.
+                            }
                         }
+
                     } else {
                         // STANDARD CUSTOMER LOGIC
                         if (j === customer.constraint.index) {
@@ -82,9 +151,9 @@ export const ui = {
                 if (isCritic) {
                      // Critic Info
                      const label = document.createElement('div');
-                     label.className = 'price'; // Re-use styling or add new
+                     label.className = 'price';
                      label.textContent = "CRITIC";
-                     label.style.color = "#3f51b5"; // Match border
+                     label.style.color = "#3f51b5";
                      info.appendChild(label);
                 } else {
                      // Standard Info
@@ -107,6 +176,23 @@ export const ui = {
 
         // Cleanup: Update previousCustomerIds with the current list
         previousCustomerIds = new Set(customers.map(c => c.id));
+
+        // Handle Toast if message exists
+        if (state.toastMessage) {
+            // Implementation of a simple toast
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = state.toastMessage;
+            toast.className = 'show-toast';
+            setTimeout(() => {
+                toast.className = toast.className.replace('show-toast', '');
+                state.toastMessage = null; // Clear it
+            }, 3000);
+        }
     },
 
     renderHUD(state) {
@@ -119,7 +205,6 @@ export const ui = {
 
     renderKeyboard(state) {
         try {
-            console.log("renderKeyboard started");
             let keyboard = document.getElementById('keyboard');
             const inputContainer = this.getInputContainer();
 
@@ -226,16 +311,18 @@ export const ui = {
 
                     // Check for Critic Hints (Priority)
                     const hint = state.keyboardHints && state.keyboardHints[char];
-                    if (hint) {
-                        if (hint === 'correct') keyBtn.classList.add('key-correct');
-                        else if (hint === 'present') keyBtn.classList.add('key-present');
-                        else if (hint === 'absent') keyBtn.classList.add('key-absent');
+                    if (hint === 'absent') {
+                        // "Turn that key Bold Red"
+                        keyBtn.classList.add('key-absent');
                     } else {
+                        // "Do not use Yellow/Green on the keyboard"
+                        // So even if hint is correct/present (not used now), we ignore it or handle appropriately if we decide to add it back later.
+                        // Currently logic.js only sets 'absent'.
+
                         // Standard Price Coloring
                         const cost = state.letterCosts[char];
                         // Safety check for cost
                         if (typeof cost === 'undefined') {
-                            console.error(`Letter cost for ${char} is undefined!`);
                             keyBtn.classList.add('key-mid'); // Fallback style
                         } else {
                             if (cost <= 1.00) keyBtn.classList.add('key-cheap');
@@ -272,7 +359,6 @@ export const ui = {
 
                 keyboard.appendChild(rowDiv);
             });
-            console.log("renderKeyboard finished");
         } catch(e) {
             console.error("renderKeyboard crash:", e);
         }

@@ -64,25 +64,7 @@ export const GameLogic = {
       return null;
     }
 
-    // Check for Critic Constraint
-    // "Do not generate new customer requests that match the Critic's secret word's positions"
-    const critic = state.activeSlots.find(c => c.type === 'critic');
     let letter = this.drawValidTile(state, slotIndex);
-
-    // If there is a critic, ensure the drawn tile at slotIndex does NOT match critic's secret word at slotIndex
-    if (critic) {
-        let attempts = 0;
-        while (letter === critic.secretWord[slotIndex] && attempts < 10) {
-            // Draw again (put back and shuffle? drawValidTile handles bag mechanics, but we need to reject this specific letter)
-            // drawValidTile doesn't support exclusion.
-            // We can just draw another one.
-            // Ideally we push the invalid one back.
-            state.tileBag.push(letter);
-            this.shuffle(state.tileBag);
-            letter = this.drawValidTile(state, slotIndex);
-            attempts++;
-        }
-    }
 
     const index = slotIndex; // Fixed position based on slot
 
@@ -141,6 +123,8 @@ export const GameLogic = {
       const activeCritic = state.activeSlots.find(c => c.type === 'critic');
       let spawnCritic = false;
 
+      // Check totalCash against CRITIC_THRESHOLDS
+      // Constraint: Only spawn if no Critic is currently active.
       if (!activeCritic) {
            if (typeof state.nextCriticThresholdIndex === 'undefined') {
                state.nextCriticThresholdIndex = 0;
@@ -164,9 +148,9 @@ export const GameLogic = {
               id: seed,
               seed: seed,
               secretWord: secretWord,
-              lockedState: [null, null, null, null, null],
-              patience: GAME_CONFIG.START_PATIENCE + (state.globalPatienceBonus || 0),
-              constraint: { index: slotIndex },
+              sessionGuesses: [], // "The Critic entity must track its own isolated state: sessionGuesses"
+              patience: GAME_CONFIG.CRITIC_PATIENCE, // Starts at 6 (Double normal)
+              constraint: { index: slotIndex }, // Still need a visual slot
               willingPrice: 0,
           });
       } else {
@@ -246,54 +230,46 @@ export const GameLogic = {
     let criticDefeated = false;
 
     if (critic) {
+        // "When the player submits a valid word to the game (any customer), push that word to the Critic's sessionGuesses."
+        critic.sessionGuesses.push(state.buffer);
+
         // Win Condition: Exact Match
+        // "Win: If the player submits the exact secretWord, the Critic leaves."
         if (state.buffer === critic.secretWord) {
              criticDefeated = true;
-             // Reward
+             // Reward: "Increase global max patience for future customers by +1."
              state.globalPatienceBonus = (state.globalPatienceBonus || 0) + 1;
-             // Reset Keyboard
+             // Reset Keyboard Hints related to Critic?
+             // "Keyboard Feedback... Do not use Yellow/Green on the keyboard; keep the keyboard for "Dead Letters" only"
+             // Since we share keyboard state, maybe we should clear "absent" hints that are not dead letters for other reasons?
+             // But actually, dead letters are just dead.
+             // We can probably keep the red keys or reset them.
+             // Prompt says: "If Critic patience hits 0 ... show a toast message".
+             // For win, it doesn't say reset keyboard, but it's good practice.
              state.keyboardHints = {};
         } else {
-             // Update Locked State & Keyboard Hints
-             const word = state.buffer;
+             // Keyboard Feedback
+             // "Iterate through sessionGuesses. If a letter has been tried and is NOT in the secretWord at all, turn that key Bold Red."
              const secret = critic.secretWord;
 
-             // First pass: Correct letters (Green)
-             const secretArr = secret.split('');
-             const wordArr = word.split('');
-             const unmatchedSecret = [];
+             // We need to re-evaluate keyboard hints based on ALL session guesses
+             // Because previous "absent" might still be valid or we need to ensure we only mark dead letters.
+             // Actually, keyboardHints is global state.
+             // We should update it.
 
-             // Lock correct letters
-             for (let i=0; i<5; i++) {
-                 if (wordArr[i] === secretArr[i]) {
-                     critic.lockedState[i] = wordArr[i];
-                     state.keyboardHints[wordArr[i]] = 'correct';
-                     secretArr[i] = null; // Mark handled
-                 } else {
-                     unmatchedSecret.push(secretArr[i]);
+             // Clear existing hints first?
+             // Or merge?
+             // The prompt says "keep the keyboard for 'Dead Letters' only".
+             // This implies we shouldn't show green/yellow on keyboard.
+
+             // Let's iterate all session guesses to determine dead letters.
+             critic.sessionGuesses.forEach(guess => {
+                 for (let char of guess) {
+                     if (!secret.includes(char)) {
+                         state.keyboardHints[char] = 'absent';
+                     }
                  }
-             }
-
-             // Second pass: Present (Yellow) or Absent (Red)
-             for (let i=0; i<5; i++) {
-                 const char = wordArr[i];
-                 if (state.keyboardHints[char] === 'correct') continue; // Already green
-
-                 if (unmatchedSecret.includes(char)) {
-                      // Only mark yellow if not already green elsewhere (Wordle logic)
-                      // Simple version: If in unmatched, mark present.
-                      if (state.keyboardHints[char] !== 'correct') {
-                           state.keyboardHints[char] = 'present';
-                      }
-                      // Remove one instance
-                      const idx = unmatchedSecret.indexOf(char);
-                      if (idx > -1) unmatchedSecret.splice(idx, 1);
-                 } else {
-                      if (!state.keyboardHints[char]) {
-                          state.keyboardHints[char] = 'absent';
-                      }
-                 }
-             }
+             });
         }
     }
 
@@ -341,10 +317,13 @@ export const GameLogic = {
 
     // Departure
     const originalCount = state.activeSlots.length;
+    let criticLostSecret = null;
 
     // Check if any departing are Critics -> Penalty
     const departingCritics = state.activeSlots.filter(c => c.patience <= 0 && c.type === 'critic');
     if (departingCritics.length > 0) {
+        // "Loss: If Critic patience hits 0, they leave. Penalty: Permanently destroy the seat slot. Show a toast message: 'They wanted: [SECRET WORD]'."
+        criticLostSecret = departingCritics[0].secretWord;
         // Reset keyboard hints if critic leaves
         state.keyboardHints = {};
     }
@@ -358,13 +337,24 @@ export const GameLogic = {
     // Assign reviews for newly dead slots
     if (state.maxSlots < oldMaxSlots) {
         for (let i = state.maxSlots; i < oldMaxSlots; i++) {
-            if (negativeReviews.length > 0) {
+            if (criticLostSecret && i === state.maxSlots) { // Crude way to attach message to the specific slot if possible, or just toast.
+                // The prompt says "Show a toast message".
+                // We'll handle the toast in UI or here by setting a property.
+                // But we also need to set deadSlotReview.
+                state.deadSlotReviews[i] = `Wanted: ${criticLostSecret}`;
+            } else if (negativeReviews.length > 0) {
                 const randomReview = negativeReviews[Math.floor(Math.random() * negativeReviews.length)];
                 state.deadSlotReviews[i] = randomReview;
             } else {
                  state.deadSlotReviews[i] = "Walked Out";
             }
         }
+    }
+
+    // If there was a critic loss, we can also dispatch an event or set a flag for the UI to show a toast.
+    if (criticLostSecret) {
+        // We can't easily show a toast from here without UI access, but we can store it in state.
+        state.toastMessage = `They wanted: ${criticLostSecret}`;
     }
 
     // Spawn Logic
