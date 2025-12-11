@@ -7,7 +7,6 @@ export const GAME_CONFIG = {
   BASE_REWARD: 3.5,
   PRICE_DECAY: 0.5,
   MIN_LETTER_COST: 0.1,
-  CRITIC_THRESHOLDS: [20, 50, 100, 150],
 };
 
 export const SCRABBLE_DISTRIBUTION = {
