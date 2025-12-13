@@ -100,6 +100,7 @@ h1 {
     font-size: 0.9rem; /* 14px */
     background-color: #fff;
     border-radius: 3px;
+    position: relative; /* Essential for pencil grid */
 }
 
 .slot-active {
@@ -450,46 +451,78 @@ h1 {
     font-weight: 900;
 }
 
+/* Pencil Grid (Corners, Small) */
+.pencil-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    padding: 1px;
+    pointer-events: none;
+}
+
+.pencil-mark {
+    font-size: 8px; /* Very small */
+    line-height: 8px;
+    color: #d4ac0d; /* Yellowish */
+    margin: 0 1px;
+}
+
+
 /* Keyboard Feedback */
-.key-absent {
-    background-color: #7f8c8d !important;
-    color: white !important;
-    border-color: #34495e !important;
-}
-
-.key-present {
-    background-color: #f1c40f !important;
-    color: black !important;
-    border-color: #f39c12 !important;
-    font-weight: bold;
-}
-
-.key-correct {
-    /* Actually prompt says Yellow/Red go to keyboard, Green in boxes.
-       But standard Wordle also highlights Green on keyboard if found.
-       The prompt says "Cleanup: Reset all keyboard keys back to default".
-       It says "Bold Red: Letter is not in the Critic's word."
-       "Bold Yellow: Letter is in the word but wrong spot."
-       It DOES NOT explicitly say Green goes to keyboard, but usually it does.
-       Wait, "Yellow/Red: Do not show Yellow/Red in the boxes. Only show Green in the boxes. (Yellow/Red go to the keyboard)."
-       So Keyboard gets Yellow/Red. Does it get Green?
-       Usually if I know a letter is Green, I want to see it on keyboard too.
-       I'll implement Green on keyboard too for consistency unless strictly forbidden.
-       Prompt: "Bold Red... Bold Yellow...". It doesn't mention Green for keyboard.
-       But "Green: If a letter is correct ... lock it in ... (it stays visible in the box)".
-       I'll stick to Red/Yellow/Green on keyboard because it makes sense.
-    */
-    background-color: #2ecc71 !important;
-    color: white !important;
-    border-color: #27ae60 !important;
-}
-
-/* Override for specific prompt instruction: "Bold Red" */
 .key-absent {
     background-color: #c0392b !important; /* Bold Red */
     font-weight: bold;
+    color: white !important;
 }
-.key-present {
-    background-color: #f39c12 !important; /* Bold Yellow */
-    font-weight: bold;
+
+/* Toast Message */
+#toast-message {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 10001;
+    left: 50%;
+    bottom: 30px;
+    font-size: 17px;
+}
+
+#toast-message.toast-show {
+    visibility: visible;
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+#toast-message.toast-hide {
+    visibility: hidden;
+}
+
+@-webkit-keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
 }

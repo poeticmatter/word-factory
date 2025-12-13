@@ -15,6 +15,32 @@ export const ui = {
         container.innerHTML = '';
         const customers = state.activeSlots;
 
+        // Toast Message Handling
+        if (state.toastMessage) {
+            let toast = document.getElementById('toast-message');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-message';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = state.toastMessage;
+            toast.className = 'toast-show';
+
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.className = 'toast-hide';
+                // Clear state message
+                if (state.toastMessage === toast.textContent) {
+                    state.toastMessage = null;
+                }
+            }, 3000);
+
+            // Clear immediately from state so we don't re-trigger animation on every render
+            // But we need to keep it long enough to show?
+            // Better pattern: UI checks state, if present, creates toast, then sets state to null.
+            state.toastMessage = null;
+        }
+
         // Loop 0 to 4 (Fixed size of 5)
         for (let i = 0; i < 5; i++) {
             // Condition B (The Graveyard)
@@ -42,8 +68,6 @@ export const ui = {
                 }
 
                 const img = document.createElement('img');
-                // Use a generated seed, but maybe consistent for critic to look distinct?
-                // Style.css says .critic-portrait { filter: grayscale(100%) }
                 img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
                 img.alt = isCritic ? 'Critic Portrait' : 'Customer Portrait';
                 if (isCritic) img.className = 'critic-portrait';
@@ -52,19 +76,83 @@ export const ui = {
                 const slotRow = document.createElement('div');
                 slotRow.className = 'slot-row';
 
+                // CRITIC LOGIC PRE-CALCULATION
+                let discoveredLetters = new Set();
+                if (isCritic) {
+                    // Step B (Find Clues)
+                    const sessionGuessString = customer.sessionGuesses.join("");
+                    for (const char of customer.secretWord) {
+                        if (sessionGuessString.includes(char)) {
+                            discoveredLetters.add(char);
+                        }
+                    }
+                }
+
                 for (let j = 0; j < 5; j++) {
                     const slot = document.createElement('div');
                     slot.className = 'letter-slot';
 
                     if (isCritic) {
-                        // CRITIC DISPLAY LOGIC
-                        if (customer.lockedState[j]) {
-                            slot.textContent = customer.lockedState[j];
-                            slot.classList.add('box-locked');
-                        } else if (state.buffer[j]) {
-                            slot.textContent = state.buffer[j];
-                            slot.classList.add('box-mirror');
+                        // CRITIC DISPLAY LOGIC ("Pencil Mark System")
+                        const secretChar = customer.secretWord[j];
+
+                        // Check if solved (Step A)
+                        let isSolved = false;
+                        for (const guess of customer.sessionGuesses) {
+                            if (guess[j] === secretChar) {
+                                isSolved = true;
+                                break;
+                            }
                         }
+
+                        if (isSolved) {
+                            slot.textContent = secretChar;
+                            slot.classList.add('box-locked'); // Green/Locked style
+                        } else {
+                            // Render Pencil Grid (Step C)
+                            // We need a grid container inside the slot
+                            const grid = document.createElement('div');
+                            grid.className = 'pencil-grid';
+                            // Make sure 'letter-slot' has relative positioning in CSS (assumed or needs adding)
+
+                            // Iterate discovered letters to see if we should show pencil mark
+                            // Negative Constraint: Check if player has guessed this letter at index j
+                            const potentialMarks = [];
+                            discoveredLetters.forEach(char => {
+                                let alreadyGuessedAtThisPos = false;
+                                for (const guess of customer.sessionGuesses) {
+                                    if (guess[j] === char) {
+                                        alreadyGuessedAtThisPos = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!alreadyGuessedAtThisPos) {
+                                    potentialMarks.push(char);
+                                }
+                            });
+
+                            // Sort for consistent display
+                            potentialMarks.sort();
+
+                            // Render marks
+                            potentialMarks.forEach(markChar => {
+                                const mark = document.createElement('span');
+                                mark.className = 'pencil-mark';
+                                mark.textContent = markChar;
+                                grid.appendChild(mark);
+                            });
+
+                            slot.appendChild(grid);
+
+                            // Also show mirror if typing?
+                            // Standard UI shows typing in slots... but here the slots are the puzzle.
+                            // If player is typing, where does it go?
+                            // Usually "buffer" is shown in input area (separate).
+                            // The slots on the card are for the Requirement.
+                            // So we don't show typing here.
+                        }
+
                     } else {
                         // STANDARD CUSTOMER LOGIC
                         if (j === customer.constraint.index) {
@@ -82,9 +170,9 @@ export const ui = {
                 if (isCritic) {
                      // Critic Info
                      const label = document.createElement('div');
-                     label.className = 'price'; // Re-use styling or add new
+                     label.className = 'price';
                      label.textContent = "CRITIC";
-                     label.style.color = "#3f51b5"; // Match border
+                     label.style.color = "#3f51b5";
                      info.appendChild(label);
                 } else {
                      // Standard Info
@@ -119,34 +207,28 @@ export const ui = {
 
     renderKeyboard(state) {
         try {
-            console.log("renderKeyboard started");
             let keyboard = document.getElementById('keyboard');
             const inputContainer = this.getInputContainer();
 
-            // Ensure keyboard container exists inside input-container
             if (!keyboard) {
                 keyboard = document.createElement('div');
                 keyboard.id = 'keyboard';
                 inputContainer.appendChild(keyboard);
             }
 
-            keyboard.innerHTML = ''; // Re-render
+            keyboard.innerHTML = '';
 
-            // Display current buffer at the top of input area
             let bufferDisplay = document.getElementById('buffer-display');
             if (!bufferDisplay) {
                 bufferDisplay = document.createElement('div');
                 bufferDisplay.id = 'buffer-display';
-                // Insert buffer display before keyboard
                 inputContainer.insertBefore(bufferDisplay, keyboard);
             }
 
-            // Check validity if buffer is full (5 chars)
             const isFull = state.buffer.length === 5;
             const isValid = isFull && Dictionary.isValid(state.buffer);
             const isInvalid = isFull && !isValid;
 
-            // Render 5 slots for buffer
             bufferDisplay.innerHTML = '';
             const bufferRow = document.createElement('div');
             bufferRow.className = 'slot-row';
@@ -166,19 +248,15 @@ export const ui = {
             }
             bufferDisplay.appendChild(bufferRow);
 
-            // Stats Row
-            // Calculate prediction
             const prediction = GameLogic.calculatePrediction(state, state.buffer);
 
-            // Check if stats row exists, else create it
             let statsRow = document.getElementById('stats-row');
             if (!statsRow) {
                 statsRow = document.createElement('div');
                 statsRow.id = 'stats-row';
-                // Insert after buffer display
                 inputContainer.insertBefore(statsRow, keyboard);
             }
-            statsRow.innerHTML = ''; // Clear previous
+            statsRow.innerHTML = '';
 
             const costEl = document.createElement('div');
             costEl.className = 'stat-cost';
@@ -200,6 +278,22 @@ export const ui = {
             statsRow.appendChild(incomeEl);
             statsRow.appendChild(profitEl);
 
+            // Determine Keyboard Coloring based on Critic
+            // Spec: "If a letter has been tried and is NOT in the secretWord at all, turn that key Bold Red."
+            // "Do not use Yellow/Green"
+            const critic = state.activeSlots.find(c => c.type === 'critic');
+            const deadLetters = new Set();
+
+            if (critic) {
+                const secret = critic.secretWord;
+                critic.sessionGuesses.forEach(guess => {
+                    for (const char of guess) {
+                        if (!secret.includes(char)) {
+                            deadLetters.add(char);
+                        }
+                    }
+                });
+            }
 
             const rows = [
                 "QWERTYUIOP",
@@ -211,7 +305,6 @@ export const ui = {
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'keyboard-row';
 
-                // Row 3 (Index 2): Prepend Backspace
                 if (index === 2) {
                     const backBtn = document.createElement('div');
                     backBtn.className = 'key key-action';
@@ -224,20 +317,20 @@ export const ui = {
                     const keyBtn = document.createElement('div');
                     keyBtn.className = 'key';
 
-                    // Check for Critic Hints (Priority)
-                    const hint = state.keyboardHints && state.keyboardHints[char];
-                    if (hint) {
-                        if (hint === 'correct') keyBtn.classList.add('key-correct');
-                        else if (hint === 'present') keyBtn.classList.add('key-present');
-                        else if (hint === 'absent') keyBtn.classList.add('key-absent');
+                    // Coloring Logic
+                    if (deadLetters.has(char)) {
+                         keyBtn.classList.add('key-absent'); // Assume 'key-absent' is red/bold-red styled
                     } else {
-                        // Standard Price Coloring
+                        // Standard Price Coloring (only if not dead?)
+                        // "Keep the keyboard for 'Dead Letters' only" might mean only show Dead.
+                        // But we probably still want to see prices?
+                        // Spec: "If a letter has been tried and is NOT in the secretWord at all, turn that key Bold Red."
+                        // It doesn't explicitly forbid price colors for others, but says "Do not use Yellow/Green".
+                        // Existing logic uses price colors (cheap/mid/expensive).
+                        // I will preserve price colors for non-dead letters, as that is core game mechanic (economy).
+
                         const cost = state.letterCosts[char];
-                        // Safety check for cost
-                        if (typeof cost === 'undefined') {
-                            console.error(`Letter cost for ${char} is undefined!`);
-                            keyBtn.classList.add('key-mid'); // Fallback style
-                        } else {
+                        if (typeof cost !== 'undefined') {
                             if (cost <= 1.00) keyBtn.classList.add('key-cheap');
                             else if (cost > 1.00 && cost < 3.00) keyBtn.classList.add('key-mid');
                             else if (cost >= 3.00) keyBtn.classList.add('key-expensive');
@@ -261,7 +354,6 @@ export const ui = {
                     rowDiv.appendChild(keyBtn);
                 }
 
-                // Row 3 (Index 2): Append Enter
                 if (index === 2) {
                     const enterBtn = document.createElement('div');
                     enterBtn.className = 'key key-submit';
@@ -272,7 +364,6 @@ export const ui = {
 
                 keyboard.appendChild(rowDiv);
             });
-            console.log("renderKeyboard finished");
         } catch(e) {
             console.error("renderKeyboard crash:", e);
         }
@@ -291,7 +382,6 @@ export const ui = {
         if (closeBtn) closeBtn.onclick = closeModal;
         if (startBtn) startBtn.onclick = closeModal;
 
-        // Auto-Show on First Visit
         if (!localStorage.getItem('hasSeenHelp')) {
             openModal();
             localStorage.setItem('hasSeenHelp', 'true');
