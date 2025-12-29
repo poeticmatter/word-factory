@@ -12,6 +12,8 @@ export const state = {
     totalLifetimeCash: 0,
     globalPatienceBonus: 0,
     keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
+    toastMessage: null,
+    nextCriticThresholdIndex: 0,
 
     init() {
         this.cash = GAME_CONFIG.START_CASH;
@@ -24,6 +26,8 @@ export const state = {
         this.totalLifetimeCash = 0;
         this.globalPatienceBonus = 0;
         this.keyboardHints = {};
+        this.toastMessage = null;
+        this.nextCriticThresholdIndex = 0;
 
         // Initialize letterCosts (A-Z) all at 1.00
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

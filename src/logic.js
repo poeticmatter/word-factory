@@ -65,18 +65,15 @@ export const GameLogic = {
     }
 
     // Check for Critic Constraint
-    // "Do not generate new customer requests that match the Critic's secret word's positions"
     const critic = state.activeSlots.find(c => c.type === 'critic');
     let letter = this.drawValidTile(state, slotIndex);
 
     // If there is a critic, ensure the drawn tile at slotIndex does NOT match critic's secret word at slotIndex
+    // This avoids accidental "clues" from normal customers? Or just avoiding conflict?
+    // User didn't ask for this, but it was in previous logic. I'll keep it safe.
     if (critic) {
         let attempts = 0;
         while (letter === critic.secretWord[slotIndex] && attempts < 10) {
-            // Draw again (put back and shuffle? drawValidTile handles bag mechanics, but we need to reject this specific letter)
-            // drawValidTile doesn't support exclusion.
-            // We can just draw another one.
-            // Ideally we push the invalid one back.
             state.tileBag.push(letter);
             this.shuffle(state.tileBag);
             letter = this.drawValidTile(state, slotIndex);
@@ -84,14 +81,10 @@ export const GameLogic = {
         }
     }
 
-    const index = slotIndex; // Fixed position based on slot
-
+    const index = slotIndex;
     const willingPrice = GAME_CONFIG.BASE_REWARD;
-
-    // Generate a random seed
     const seed = Date.now().toString() + Math.random().toString();
     const id = seed;
-
     const basePatience = GAME_CONFIG.START_PATIENCE + (state.globalPatienceBonus || 0);
 
     return {
@@ -109,7 +102,7 @@ export const GameLogic = {
 
   initializeGame(state) {
     const usedIndices = state.activeSlots.map((c) => c.constraint.index);
-    const allIndices = [0, 1, 2, 3, 4]; // Assumes MAX_SLOTS is 5
+    const allIndices = [0, 1, 2, 3, 4];
     const availableIndices = allIndices.filter((i) => !usedIndices.includes(i));
 
     while (
@@ -123,7 +116,6 @@ export const GameLogic = {
       }
     }
 
-    // Sort activeSlots by constraint index to keep UI stable (0,1,2,4 etc.)
     state.activeSlots.sort((a, b) => a.constraint.index - b.constraint.index);
   },
 
@@ -141,6 +133,7 @@ export const GameLogic = {
       const activeCritic = state.activeSlots.find(c => c.type === 'critic');
       let spawnCritic = false;
 
+      // Check thresholds
       if (!activeCritic) {
            if (typeof state.nextCriticThresholdIndex === 'undefined') {
                state.nextCriticThresholdIndex = 0;
@@ -164,9 +157,9 @@ export const GameLogic = {
               id: seed,
               seed: seed,
               secretWord: secretWord,
-              lockedState: [null, null, null, null, null],
-              patience: GAME_CONFIG.START_PATIENCE + (state.globalPatienceBonus || 0),
-              constraint: { index: slotIndex },
+              sessionGuesses: [],
+              patience: 6, // Starts at 6 (Double normal, roughly)
+              constraint: { index: slotIndex }, // Needs a slot to sit in
               willingPrice: 0,
           });
       } else {
@@ -186,7 +179,6 @@ export const GameLogic = {
 
     let income = 0;
     state.activeSlots.forEach((customer) => {
-      // Check if buffer is long enough to cover the index
       if (currentBuffer.length > customer.constraint.index) {
         const charAtConstraint = currentBuffer[customer.constraint.index];
         if (charAtConstraint === customer.constraint.letter) {
@@ -203,27 +195,25 @@ export const GameLogic = {
       return { success: false, message: "Word must be 5 letters" };
     }
 
-    // Dictionary Check
     if (!Dictionary.isValid(state.buffer)) {
       return { success: false, message: "Unknown Word" };
     }
 
-    // Calculate Cost
+    // Cost
     let cost = 0;
     for (let char of state.buffer) {
       cost += state.letterCosts[char];
     }
 
-    // Solvency Check
     if (cost > state.cash) {
       return { success: false, message: "Too Expensive" };
     }
 
-    // Identify Matches
     const matches = [];
     let revenue = 0;
 
     state.activeSlots.forEach((customer) => {
+      // Logic for standard customers
       const charAtConstraint = state.buffer[customer.constraint.index];
       if (charAtConstraint === customer.constraint.letter) {
         matches.push(customer.id);
@@ -231,96 +221,60 @@ export const GameLogic = {
       }
     });
 
-    // Execute Transaction
     state.cash = state.cash - cost + revenue;
-    state.totalLifetimeCash += revenue; // Track lifetime earnings
+    state.totalLifetimeCash += revenue;
 
-    // Inflation: Increase cost of every used letter
+    // Inflation
     const usedLetters = new Set(state.buffer.split(""));
     for (let char of state.buffer) {
       state.letterCosts[char] *= GAME_CONFIG.INFLATION_RATE;
     }
 
-    // Handle Critic Logic if active
+    // Critic Logic
     const critic = state.activeSlots.find(c => c.type === 'critic');
     let criticDefeated = false;
 
     if (critic) {
-        // Win Condition: Exact Match
+        // Amnesia Logic: Push word to sessionGuesses (Validation already passed)
+        critic.sessionGuesses.push(state.buffer);
+
+        // Win Condition
         if (state.buffer === critic.secretWord) {
              criticDefeated = true;
-             // Reward
              state.globalPatienceBonus = (state.globalPatienceBonus || 0) + 1;
-             // Reset Keyboard
-             state.keyboardHints = {};
-        } else {
-             // Update Locked State & Keyboard Hints
-             const word = state.buffer;
-             const secret = critic.secretWord;
-
-             // First pass: Correct letters (Green)
-             const secretArr = secret.split('');
-             const wordArr = word.split('');
-             const unmatchedSecret = [];
-
-             // Lock correct letters
-             for (let i=0; i<5; i++) {
-                 if (wordArr[i] === secretArr[i]) {
-                     critic.lockedState[i] = wordArr[i];
-                     state.keyboardHints[wordArr[i]] = 'correct';
-                     secretArr[i] = null; // Mark handled
-                 } else {
-                     unmatchedSecret.push(secretArr[i]);
-                 }
-             }
-
-             // Second pass: Present (Yellow) or Absent (Red)
-             for (let i=0; i<5; i++) {
-                 const char = wordArr[i];
-                 if (state.keyboardHints[char] === 'correct') continue; // Already green
-
-                 if (unmatchedSecret.includes(char)) {
-                      // Only mark yellow if not already green elsewhere (Wordle logic)
-                      // Simple version: If in unmatched, mark present.
-                      if (state.keyboardHints[char] !== 'correct') {
-                           state.keyboardHints[char] = 'present';
-                      }
-                      // Remove one instance
-                      const idx = unmatchedSecret.indexOf(char);
-                      if (idx > -1) unmatchedSecret.splice(idx, 1);
-                 } else {
-                      if (!state.keyboardHints[char]) {
-                          state.keyboardHints[char] = 'absent';
-                      }
-                 }
-             }
         }
     }
 
-    // Remove matched customers
+    // Filter matches to exclude Critic from standard removal
+    // (Critics are only removed if defeated or patience runs out)
+    const standardMatches = matches.filter(id => {
+        const c = state.activeSlots.find(slot => slot.id === id);
+        return c && c.type !== 'critic';
+    });
+
+    // Remove matched standard customers
     state.activeSlots = state.activeSlots.filter(
-      (c) => !matches.includes(c.id)
+      (c) => !standardMatches.includes(c.id)
     );
 
+    // Remove defeated critic
     if (criticDefeated) {
         state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
     }
 
-    // End Turn
     this.endTurn(state, usedLetters);
 
-    // Clear buffer after turn
     state.buffer = "";
-
-    return { success: true, matches: matches };
+    return { success: true, matches: standardMatches };
   },
 
   skipTurn(state) {
-    this.endTurn(state, new Set()); // No letters used
+    this.endTurn(state, new Set());
     state.buffer = "";
   },
 
   endTurn(state, usedLettersSet = new Set()) {
+    // Deflation
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (let char of alphabet) {
       if (!usedLettersSet.has(char)) {
@@ -339,23 +293,28 @@ export const GameLogic = {
       );
     });
 
-    // Departure
+    // Departure Logic
     const originalCount = state.activeSlots.length;
 
-    // Check if any departing are Critics -> Penalty
+    // Check for departing Critics (Loss Condition)
     const departingCritics = state.activeSlots.filter(c => c.patience <= 0 && c.type === 'critic');
-    if (departingCritics.length > 0) {
-        // Reset keyboard hints if critic leaves
-        state.keyboardHints = {};
-    }
 
+    departingCritics.forEach(critic => {
+        // Toast message for Critic loss
+        state.toastMessage = `They wanted: ${critic.secretWord}`;
+    });
+
+    // Remove all zero patience slots
     state.activeSlots = state.activeSlots.filter((c) => c.patience > 0);
+
+    // Calculate slots lost
     const departedCount = originalCount - state.activeSlots.length;
 
     const oldMaxSlots = state.maxSlots;
+    // Reduce max slots for every departure (Standard + Critic Penalty)
     state.maxSlots = Math.max(0, state.maxSlots - departedCount);
 
-    // Assign reviews for newly dead slots
+    // Assign reviews for lost slots
     if (state.maxSlots < oldMaxSlots) {
         for (let i = state.maxSlots; i < oldMaxSlots; i++) {
             if (negativeReviews.length > 0) {
@@ -367,9 +326,7 @@ export const GameLogic = {
         }
     }
 
-    // Spawn Logic
     this.spawnCriticOrCustomer(state);
-
     state.turnCount++;
   },
 };
