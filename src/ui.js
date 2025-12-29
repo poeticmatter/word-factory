@@ -61,6 +61,7 @@ export const ui = {
 
                 const card = document.createElement('div');
                 card.className = isCritic ? 'customer-card critic-card' : 'customer-card';
+                card.dataset.id = customer.id;
 
                 // Check ID for entry animation
                 if (!previousCustomerIds.has(customer.id)) {
@@ -404,12 +405,45 @@ export const ui = {
             debugBtn.onclick = () => {
                 state.debugMode = !state.debugMode;
                 this.render(state);
+                debugBtn.blur();
             };
         }
 
         debugBtn.textContent = state.debugMode ? 'Debug: ON' : 'Debug: OFF';
         debugBtn.style.backgroundColor = state.debugMode ? '#4CAF50' : '#f44336';
         debugBtn.style.color = 'white';
+    },
+
+    animateExits(happyIds, unhappyIds) {
+        const container = this.getCustomersContainer();
+        if (!container) return Promise.resolve();
+
+        const cards = Array.from(container.querySelectorAll('.customer-card'));
+        const animations = [];
+
+        cards.forEach(card => {
+            const id = card.dataset.id;
+            if (happyIds.includes(id)) {
+                card.classList.add('slide-out-right');
+                animations.push(new Promise(resolve => {
+                    card.addEventListener('animationend', resolve, { once: true });
+                    // Fallback in case animation doesn't fire
+                    setTimeout(resolve, 600);
+                }));
+            } else if (unhappyIds.includes(id)) {
+                card.classList.add('slide-out-left');
+                animations.push(new Promise(resolve => {
+                    card.addEventListener('animationend', resolve, { once: true });
+                    setTimeout(resolve, 600);
+                }));
+            }
+        });
+
+        if (animations.length > 0) {
+            return Promise.all(animations);
+        } else {
+            return Promise.resolve();
+        }
     },
 
     render(state) {

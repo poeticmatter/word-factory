@@ -3,7 +3,7 @@ import { ui } from './ui.js';
 import { state } from './state.js';
 
 export const InputHandler = {
-    handleVirtualKey(key) {
+    async handleVirtualKey(key) {
         if (key === 'BACKSPACE') {
             state.buffer = state.buffer.slice(0, -1);
             ui.render(state);
@@ -11,7 +11,10 @@ export const InputHandler = {
         }
 
         if (key === 'ENTER') {
-            GameLogic.processTurn(state);
+            const result = GameLogic.processTurn(state);
+            if (result.success && (result.happyDepartedIds.length > 0 || result.unhappyDepartedIds.length > 0)) {
+                await ui.animateExits(result.happyDepartedIds, result.unhappyDepartedIds);
+            }
             ui.render(state);
             return;
         }
@@ -22,19 +25,25 @@ export const InputHandler = {
         }
     },
 
-    handlePhysicalKey(event) {
+    async handlePhysicalKey(event) {
         // Prevent default behavior for game keys if needed, but usually fine
         const key = event.key.toUpperCase();
 
         if (key === 'ENTER') {
-            GameLogic.processTurn(state);
+            const result = GameLogic.processTurn(state);
+            if (result.success && (result.happyDepartedIds.length > 0 || result.unhappyDepartedIds.length > 0)) {
+                await ui.animateExits(result.happyDepartedIds, result.unhappyDepartedIds);
+            }
             ui.render(state);
             return;
         }
 
         if (key === ' ') {
             event.preventDefault(); // Prevent scrolling
-            GameLogic.skipTurn(state);
+            const result = GameLogic.skipTurn(state);
+            if (result.success && (result.happyDepartedIds.length > 0 || result.unhappyDepartedIds.length > 0)) {
+                await ui.animateExits(result.happyDepartedIds, result.unhappyDepartedIds);
+            }
             ui.render(state);
             return;
         }

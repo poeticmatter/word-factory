@@ -266,15 +266,25 @@ export const GameLogic = {
         state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
     }
 
-    this.endTurn(state, usedLetters);
+    const endTurnResult = this.endTurn(state, usedLetters);
 
     state.buffer = "";
-    return { success: true, matches: standardMatches };
+    return {
+        success: true,
+        matches: standardMatches,
+        happyDepartedIds: standardMatches,
+        unhappyDepartedIds: endTurnResult.unhappyDepartedIds
+    };
   },
 
   skipTurn(state) {
-    this.endTurn(state, new Set());
+    const endTurnResult = this.endTurn(state, new Set());
     state.buffer = "";
+    return {
+        success: true,
+        happyDepartedIds: [],
+        unhappyDepartedIds: endTurnResult.unhappyDepartedIds
+    };
   },
 
   endTurn(state, usedLettersSet = new Set()) {
@@ -300,8 +310,13 @@ export const GameLogic = {
     // Departure Logic
     const originalCount = state.activeSlots.length;
 
+    // Identify unhappy departures (patience <= 0)
+    // Note: includes Critics if they run out of patience
+    const unhappyDepartures = state.activeSlots.filter(c => c.patience <= 0);
+    const unhappyDepartedIds = unhappyDepartures.map(c => c.id);
+
     // Check for departing Critics (Loss Condition)
-    const departingCritics = state.activeSlots.filter(c => c.patience <= 0 && c.type === 'critic');
+    const departingCritics = unhappyDepartures.filter(c => c.type === 'critic');
 
     departingCritics.forEach(critic => {
         // Toast message for Critic loss
@@ -332,5 +347,7 @@ export const GameLogic = {
 
     this.spawnCriticOrCustomer(state);
     state.turnCount++;
+
+    return { unhappyDepartedIds };
   },
 };
