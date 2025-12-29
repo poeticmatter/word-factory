@@ -26,7 +26,8 @@ export async function loadCriticWords() {
     const text = await response.text();
     const words = text.split('\n')
         .map(w => w.trim())
-        .filter(w => w.length > 0 && !w.startsWith('#'));
+        .filter(w => w.length > 0 && !w.startsWith('#'))
+        .map(w => w.toUpperCase());
 
     criticWords.push(...words);
     console.log("Critic words loaded:", criticWords.length);
