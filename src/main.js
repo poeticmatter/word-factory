@@ -4,7 +4,7 @@ import { ui } from './ui.js';
 import { GameLogic } from './logic.js';
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
-import { loadReviews } from './loader.js';
+import { loadReviews, loadCriticWords } from './loader.js';
 
 console.log("Game System Initialized");
 
@@ -14,8 +14,15 @@ async function initApp() {
     // You could render a loading screen here via UI if desired
     // ui.renderLoading();
 
-    await Dictionary.loadDictionary();
-    await loadReviews();
+    try {
+        await Dictionary.loadDictionary();
+        await loadReviews();
+        await loadCriticWords();
+    } catch (e) {
+        console.error("Critical Error during initialization:", e);
+        alert("Failed to load game resources. " + e.message);
+        return;
+    }
 
     // Initialize UI listeners (Modal, etc.)
     ui.init();
