@@ -199,7 +199,7 @@ export const GameLogic = {
       return { success: false, message: "Word must be 5 letters" };
     }
 
-    if (!Dictionary.isValid(state.buffer)) {
+    if (!state.debugMode && !Dictionary.isValid(state.buffer)) {
       return { success: false, message: "Unknown Word" };
     }
 
