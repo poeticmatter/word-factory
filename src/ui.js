@@ -388,9 +388,34 @@ export const ui = {
         }
     },
 
+    renderDebugToggle(state) {
+        let debugBtn = document.getElementById('debug-toggle');
+        if (!debugBtn) {
+            debugBtn = document.createElement('button');
+            debugBtn.id = 'debug-toggle';
+            debugBtn.style.position = 'fixed';
+            debugBtn.style.bottom = '10px';
+            debugBtn.style.left = '10px';
+            debugBtn.style.zIndex = '9999';
+            debugBtn.style.fontSize = '12px';
+            debugBtn.style.opacity = '0.7';
+            document.body.appendChild(debugBtn);
+
+            debugBtn.onclick = () => {
+                state.debugMode = !state.debugMode;
+                this.render(state);
+            };
+        }
+
+        debugBtn.textContent = state.debugMode ? 'Debug: ON' : 'Debug: OFF';
+        debugBtn.style.backgroundColor = state.debugMode ? '#4CAF50' : '#f44336';
+        debugBtn.style.color = 'white';
+    },
+
     render(state) {
         this.renderHUD(state);
         this.renderCustomers(state);
         this.renderKeyboard(state);
+        this.renderDebugToggle(state);
     }
 };

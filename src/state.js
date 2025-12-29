@@ -14,6 +14,7 @@ export const state = {
     keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
     toastMessage: null,
     nextCriticThresholdIndex: 0,
+    debugMode: false,
 
     init() {
         this.cash = GAME_CONFIG.START_CASH;
@@ -28,6 +29,7 @@ export const state = {
         this.keyboardHints = {};
         this.toastMessage = null;
         this.nextCriticThresholdIndex = 0;
+        this.debugMode = false;
 
         // Initialize letterCosts (A-Z) all at 1.00
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

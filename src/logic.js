@@ -4,7 +4,7 @@ import {
   INVALID_POSITIONS,
 } from "./config.js";
 import { Dictionary } from "./dictionary.js";
-import { negativeReviews } from "./loader.js";
+import { negativeReviews, criticWords } from "./loader.js";
 
 export const GameLogic = {
   fillTileBag(state) {
@@ -149,7 +149,11 @@ export const GameLogic = {
       }
 
       if (spawnCritic) {
-          const secretWord = Dictionary.getRandomWord();
+          // Select from criticWords if available, else fallback (though loader ensures it shouldn't fail)
+          const secretWord = criticWords.length > 0
+              ? criticWords[Math.floor(Math.random() * criticWords.length)]
+              : Dictionary.getRandomWord();
+
           const seed = "CRITIC" + Date.now();
 
           state.activeSlots.push({
@@ -195,7 +199,7 @@ export const GameLogic = {
       return { success: false, message: "Word must be 5 letters" };
     }
 
-    if (!Dictionary.isValid(state.buffer)) {
+    if (!state.debugMode && !Dictionary.isValid(state.buffer)) {
       return { success: false, message: "Unknown Word" };
     }
 
