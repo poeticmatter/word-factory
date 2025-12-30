@@ -15,6 +15,7 @@ export const state = {
     toastMessage: null,
     nextCriticThresholdIndex: 0,
     debugMode: false,
+    brokenSlots: [],
 
     init() {
         this.cash = GAME_CONFIG.START_CASH;
@@ -22,6 +23,7 @@ export const state = {
         this.activeSlots = [];
         this.buffer = "";
         this.maxSlots = GAME_CONFIG.MAX_SLOTS;
+        this.brokenSlots = [];
         this.tileBag = [];
         this.deadSlotReviews = [];
         this.totalLifetimeCash = 0;

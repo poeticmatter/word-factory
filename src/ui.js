@@ -3,6 +3,7 @@ import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
 
 let previousCustomerIds = new Set();
+let previousActiveIndices = new Set([0, 1, 2, 3, 4]);
 
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
@@ -41,26 +42,20 @@ export const ui = {
             state.toastMessage = null;
         }
 
+        const currentActiveIndices = new Set();
+
         // Loop 0 to 4 (Fixed size of 5)
         for (let i = 0; i < 5; i++) {
-            // Condition B (The Graveyard)
-            if (i >= state.maxSlots) {
-                const reviewCard = document.createElement('div');
-                reviewCard.className = 'review-card';
-                // Retrieve specific review or fallback
-                const reviewText = state.deadSlotReviews[i] || "Walked Out";
-                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
-                container.appendChild(reviewCard);
-                continue;
-            }
+            const customer = customers.find(c => c.constraint.index === i);
 
             // Condition A (Active Customer)
-            if (i < customers.length) {
-                const customer = customers[i];
+            if (customer) {
+                currentActiveIndices.add(i);
                 const isCritic = customer.type === 'critic';
 
                 const card = document.createElement('div');
                 card.className = isCritic ? 'customer-card critic-card' : 'customer-card';
+                card.dataset.id = customer.id;
 
                 // Check ID for entry animation
                 if (!previousCustomerIds.has(customer.id)) {
@@ -190,11 +185,26 @@ export const ui = {
                 card.appendChild(info);
 
                 container.appendChild(card);
+            } else {
+                // Condition B (Review Card)
+                const reviewCard = document.createElement('div');
+                reviewCard.className = 'review-card';
+
+                // Animation Check: If this slot was previously active, it just closed.
+                if (previousActiveIndices.has(i)) {
+                    reviewCard.classList.add('slide-in-right');
+                }
+
+                // Retrieve specific review or fallback
+                const reviewText = state.deadSlotReviews[i] || "Walked Out";
+                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
+                container.appendChild(reviewCard);
             }
         }
 
         // Cleanup: Update previousCustomerIds with the current list
         previousCustomerIds = new Set(customers.map(c => c.id));
+        previousActiveIndices = currentActiveIndices;
     },
 
     renderHUD(state) {
@@ -404,12 +414,45 @@ export const ui = {
             debugBtn.onclick = () => {
                 state.debugMode = !state.debugMode;
                 this.render(state);
+                debugBtn.blur();
             };
         }
 
         debugBtn.textContent = state.debugMode ? 'Debug: ON' : 'Debug: OFF';
         debugBtn.style.backgroundColor = state.debugMode ? '#4CAF50' : '#f44336';
         debugBtn.style.color = 'white';
+    },
+
+    animateExits(happyIds, unhappyIds) {
+        const container = this.getCustomersContainer();
+        if (!container) return Promise.resolve();
+
+        const cards = Array.from(container.querySelectorAll('.customer-card'));
+        const animations = [];
+
+        cards.forEach(card => {
+            const id = card.dataset.id;
+            if (happyIds.includes(id)) {
+                card.classList.add('slide-out-right');
+                animations.push(new Promise(resolve => {
+                    card.addEventListener('animationend', resolve, { once: true });
+                    // Fallback in case animation doesn't fire
+                    setTimeout(resolve, 600);
+                }));
+            } else if (unhappyIds.includes(id)) {
+                card.classList.add('slide-out-left');
+                animations.push(new Promise(resolve => {
+                    card.addEventListener('animationend', resolve, { once: true });
+                    setTimeout(resolve, 600);
+                }));
+            }
+        });
+
+        if (animations.length > 0) {
+            return Promise.all(animations);
+        } else {
+            return Promise.resolve();
+        }
     },
 
     render(state) {
