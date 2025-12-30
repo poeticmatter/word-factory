@@ -3,6 +3,7 @@ import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
 
 let previousCustomerIds = new Set();
+let previousMaxSlots = 5;
 
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
@@ -47,6 +48,12 @@ export const ui = {
             if (i >= state.maxSlots) {
                 const reviewCard = document.createElement('div');
                 reviewCard.className = 'review-card';
+
+                // Animation Check
+                if (i < previousMaxSlots) {
+                    reviewCard.classList.add('slide-in-right');
+                }
+
                 // Retrieve specific review or fallback
                 const reviewText = state.deadSlotReviews[i] || "Walked Out";
                 reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
@@ -196,6 +203,7 @@ export const ui = {
 
         // Cleanup: Update previousCustomerIds with the current list
         previousCustomerIds = new Set(customers.map(c => c.id));
+        previousMaxSlots = state.maxSlots;
     },
 
     renderHUD(state) {
