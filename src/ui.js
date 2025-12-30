@@ -11,7 +11,43 @@ export const ui = {
     getCashDisplay: () => document.getElementById('cash-display'),
     getTurnDisplay: () => document.getElementById('turn-display'),
 
+    // Helper for gradient colors
+    getWatchColor(index, total) {
+        // Index 0 = Red (Last Standing)
+        // Index Max = Cyan (First to go)
+        // We want a gradient from Red -> Cyan
+        if (total <= 1) return 'text-red-500';
+
+        const ratio = index / (total - 1); // 0.0 to 1.0
+
+        // Simple discrete mapping based on ratio
+        if (ratio < 0.25) return 'text-red-500';
+        if (ratio < 0.50) return 'text-fuchsia-500'; // Magenta-ish
+        if (ratio < 0.75) return 'text-purple-500';
+        if (ratio < 1.0) return 'text-blue-500';
+        return 'text-cyan-500';
+    },
+
+    injectStyles() {
+        if (!document.getElementById('dynamic-animations')) {
+            const style = document.createElement('style');
+            style.id = 'dynamic-animations';
+            style.textContent = `
+                @keyframes slideInFromLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+                @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
+                .animate-slide-in { animation: slideInFromLeft 0.5s ease-out forwards; }
+                .animate-slide-in-right { animation: slideInFromRight 0.5s ease-out forwards; }
+                .animate-slide-out-right { animation: slideOutRight 0.5s ease-in forwards; }
+                .animate-slide-out-left { animation: slideOutLeft 0.5s ease-in forwards; }
+            `;
+            document.head.appendChild(style);
+        }
+    },
+
     renderCustomers(state) {
+        this.injectStyles(); // Ensure animations exist
         const container = this.getCustomersContainer();
         container.innerHTML = '';
         const customers = state.activeSlots;
@@ -22,59 +58,61 @@ export const ui = {
             if (!toast) {
                 toast = document.createElement('div');
                 toast.id = 'toast-message';
+                // Tailwind classes for Toast
+                toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded shadow-lg z-50 transition-opacity duration-500 opacity-0';
                 document.body.appendChild(toast);
             }
             toast.textContent = state.toastMessage;
-            toast.className = 'toast-show';
+            // Trigger animation via class
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+            });
 
-            // Auto hide after 3 seconds
             setTimeout(() => {
-                toast.className = 'toast-hide';
-                // Clear state message
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
                 if (state.toastMessage === toast.textContent) {
                     state.toastMessage = null;
                 }
             }, 3000);
-
-            // Clear immediately from state so we don't re-trigger animation on every render
-            // But we need to keep it long enough to show?
-            // Better pattern: UI checks state, if present, creates toast, then sets state to null.
             state.toastMessage = null;
         }
 
         const currentActiveIndices = new Set();
 
-        // Loop 0 to 4 (Fixed size of 5)
         for (let i = 0; i < 5; i++) {
             const customer = customers.find(c => c.constraint.index === i);
 
-            // Condition A (Active Customer)
             if (customer) {
                 currentActiveIndices.add(i);
                 const isCritic = customer.type === 'critic';
 
+                // Main Card Container - Grid Layout
+                // [Avatar] [Slots] [Stats]
+                // Stats column fixed width to align hearts/prices
                 const card = document.createElement('div');
-                card.className = isCritic ? 'customer-card critic-card' : 'customer-card';
+                card.className = `relative bg-white border border-slate-200 rounded-lg shadow-sm p-2 grid grid-cols-[auto_1fr_100px] gap-3 items-center h-16 ${isCritic ? 'border-l-4 border-l-indigo-500 bg-indigo-50/50' : ''}`;
                 card.dataset.id = customer.id;
 
-                // Check ID for entry animation
                 if (!previousCustomerIds.has(customer.id)) {
-                    card.classList.add('slide-in');
+                    card.classList.add('animate-slide-in');
                 }
 
+                // 1. Avatar
                 const img = document.createElement('img');
                 img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
-                img.alt = isCritic ? 'Critic Portrait' : 'Customer Portrait';
-                if (isCritic) img.className = 'critic-portrait';
+                img.alt = 'Portrait';
+                img.className = `w-12 h-12 rounded-full border border-slate-300 ${isCritic ? 'grayscale contrast-125' : ''}`;
                 card.appendChild(img);
 
+                // 2. Slots Row (Center)
                 const slotRow = document.createElement('div');
-                slotRow.className = 'slot-row';
+                slotRow.className = 'flex gap-1 justify-center items-center';
 
-                // CRITIC LOGIC PRE-CALCULATION
+                // Logic for Critic Clues
                 let discoveredLetters = new Set();
                 if (isCritic) {
-                    // Step B (Find Clues)
                     const sessionGuessString = customer.sessionGuesses.join("");
                     for (const char of customer.secretWord) {
                         if (sessionGuessString.includes(char)) {
@@ -85,13 +123,11 @@ export const ui = {
 
                 for (let j = 0; j < 5; j++) {
                     const slot = document.createElement('div');
-                    slot.className = 'letter-slot';
+                    // Tailwind slot styling
+                    slot.className = 'w-8 h-8 flex items-center justify-center border border-slate-300 rounded bg-white relative font-mono text-lg font-bold text-slate-800';
 
                     if (isCritic) {
-                        // CRITIC DISPLAY LOGIC ("Pencil Mark System")
                         const secretChar = customer.secretWord[j];
-
-                        // Check if solved (Step A)
                         let isSolved = false;
                         for (const guess of customer.sessionGuesses) {
                             if (guess[j] === secretChar) {
@@ -102,16 +138,12 @@ export const ui = {
 
                         if (isSolved) {
                             slot.textContent = secretChar;
-                            slot.classList.add('box-locked'); // Green/Locked style
+                            slot.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
                         } else {
-                            // Render Pencil Grid (Step C)
-                            // We need a grid container inside the slot
+                            // Pencil Grid 2x2
                             const grid = document.createElement('div');
-                            grid.className = 'pencil-grid';
-                            // Make sure 'letter-slot' has relative positioning in CSS (assumed or needs adding)
+                            grid.className = 'absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 p-0.5 pointer-events-none';
 
-                            // Iterate discovered letters to see if we should show pencil mark
-                            // Negative Constraint: Check if player has guessed this letter at index j
                             const potentialMarks = [];
                             discoveredLetters.forEach(char => {
                                 let alreadyGuessedAtThisPos = false;
@@ -121,88 +153,75 @@ export const ui = {
                                         break;
                                     }
                                 }
-
                                 if (!alreadyGuessedAtThisPos) {
                                     potentialMarks.push(char);
                                 }
                             });
-
-                            // Sort for consistent display
                             potentialMarks.sort();
 
-                            // Render marks
-                            potentialMarks.forEach(markChar => {
+                            // Limit to 4 for 2x2 grid (per user instruction to ignore overflow)
+                            potentialMarks.slice(0, 4).forEach(markChar => {
                                 const mark = document.createElement('span');
-                                mark.className = 'pencil-mark';
+                                // "A bit larger" -> text-[10px] or text-xs (0.75rem=12px might be too big for 2x2 in 32px box)
+                                // 32px / 2 = 16px per cell. 10px font fits.
+                                mark.className = 'flex items-center justify-center text-[10px] leading-none text-yellow-600 font-bold';
                                 mark.textContent = markChar;
                                 grid.appendChild(mark);
                             });
-
                             slot.appendChild(grid);
-
-                            // Also show mirror if typing?
-                            // Standard UI shows typing in slots... but here the slots are the puzzle.
-                            // If player is typing, where does it go?
-                            // Usually "buffer" is shown in input area (separate).
-                            // The slots on the card are for the Requirement.
-                            // So we don't show typing here.
                         }
-
                     } else {
-                        // STANDARD CUSTOMER LOGIC
+                        // Standard Customer
                         if (j === customer.constraint.index) {
                             slot.textContent = customer.constraint.letter;
-                            slot.classList.add('slot-active');
+                            slot.classList.add('bg-slate-50', 'border-slate-400');
                         }
                     }
                     slotRow.appendChild(slot);
                 }
                 card.appendChild(slotRow);
 
+                // 3. Stats (Right)
                 const info = document.createElement('div');
-                info.className = 'customer-info';
+                info.className = 'flex flex-col items-end justify-center min-w-[80px]';
 
-                if (isCritic) {
-                     // Critic Info
-                     const label = document.createElement('div');
-                     label.className = 'price';
-                     label.textContent = "CRITIC";
-                     label.style.color = "#3f51b5";
-                     info.appendChild(label);
-                } else {
-                     // Standard Info
-                     const price = document.createElement('div');
-                     price.className = 'price';
-                     price.textContent = `$${customer.willingPrice.toFixed(2)}`;
-                     info.appendChild(price);
+                // Price
+                const price = document.createElement('div');
+                price.className = isCritic ? 'text-indigo-600 font-bold text-base' : 'text-green-600 font-bold text-base';
+                price.textContent = isCritic ? "CRITIC" : `$${customer.willingPrice.toFixed(2)}`;
+                info.appendChild(price);
+
+                // Patience (Watches)
+                const patienceRow = document.createElement('div');
+                patienceRow.className = 'flex gap-0.5 mt-1';
+
+                // Render N watches
+                for(let k=0; k < customer.patience; k++) {
+                    const icon = document.createElement('i');
+                    icon.dataset.lucide = 'watch';
+                    // Size 16px
+                    const colorClass = this.getWatchColor(k, customer.patience);
+                    icon.className = `w-4 h-4 ${colorClass}`;
+                    patienceRow.appendChild(icon);
                 }
-
-                const patience = document.createElement('div');
-                patience.className = 'patience-hearts';
-                patience.textContent = '❤️'.repeat(customer.patience);
-
-                info.appendChild(patience);
+                info.appendChild(patienceRow);
                 card.appendChild(info);
 
                 container.appendChild(card);
             } else {
-                // Condition B (Review Card)
+                // Review Card
                 const reviewCard = document.createElement('div');
-                reviewCard.className = 'review-card';
+                reviewCard.className = 'h-16 flex items-center justify-center bg-red-50 border border-red-200 rounded-lg text-red-700 font-bold text-sm';
 
-                // Animation Check: If this slot was previously active, it just closed.
                 if (previousActiveIndices.has(i)) {
-                    reviewCard.classList.add('slide-in-right');
+                    reviewCard.classList.add('animate-slide-in-right');
                 }
-
-                // Retrieve specific review or fallback
                 const reviewText = state.deadSlotReviews[i] || "Walked Out";
                 reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
                 container.appendChild(reviewCard);
             }
         }
 
-        // Cleanup: Update previousCustomerIds with the current list
         previousCustomerIds = new Set(customers.map(c => c.id));
         previousActiveIndices = currentActiveIndices;
     },
@@ -223,15 +242,18 @@ export const ui = {
             if (!keyboard) {
                 keyboard = document.createElement('div');
                 keyboard.id = 'keyboard';
+                keyboard.className = 'w-full flex flex-col gap-1.5 items-center mt-2';
                 inputContainer.appendChild(keyboard);
             }
 
             keyboard.innerHTML = '';
 
+            // Buffer Display
             let bufferDisplay = document.getElementById('buffer-display');
             if (!bufferDisplay) {
                 bufferDisplay = document.createElement('div');
                 bufferDisplay.id = 'buffer-display';
+                bufferDisplay.className = 'flex justify-center mb-4';
                 inputContainer.insertBefore(bufferDisplay, keyboard);
             }
 
@@ -241,61 +263,65 @@ export const ui = {
 
             bufferDisplay.innerHTML = '';
             const bufferRow = document.createElement('div');
-            bufferRow.className = 'slot-row';
-
-            if (isInvalid) {
-                bufferRow.classList.add('text-invalid');
-            } else {
-                bufferRow.classList.remove('text-invalid');
-            }
+            bufferRow.className = 'flex gap-1.5';
 
             for(let i=0; i<5; i++) {
                  const slot = document.createElement('div');
-                 slot.className = 'letter-slot';
+                 // Buffer slot styling
+                 let slotClass = 'w-10 h-10 border-2 rounded flex items-center justify-center text-xl font-bold font-mono transition-colors';
+                 if (state.buffer[i]) {
+                     slotClass += ' bg-white border-slate-800 text-slate-800';
+                 } else {
+                     slotClass += ' bg-slate-50 border-slate-200 text-transparent';
+                 }
+
+                 if (isInvalid) {
+                     slotClass += ' !text-slate-400 !border-slate-300 line-through bg-slate-100';
+                 }
+
+                 slot.className = slotClass;
                  slot.textContent = state.buffer[i] || "";
-                 if (state.buffer[i]) slot.classList.add('slot-filled');
                  bufferRow.appendChild(slot);
             }
             bufferDisplay.appendChild(bufferRow);
 
+            // Stats Row
             const prediction = GameLogic.calculatePrediction(state, state.buffer);
-
             let statsRow = document.getElementById('stats-row');
             if (!statsRow) {
                 statsRow = document.createElement('div');
                 statsRow.id = 'stats-row';
+                statsRow.className = 'flex justify-center gap-4 text-sm font-bold mb-2';
                 inputContainer.insertBefore(statsRow, keyboard);
             }
             statsRow.innerHTML = '';
 
             const costEl = document.createElement('div');
-            costEl.className = 'stat-cost';
+            costEl.className = 'text-red-500';
             costEl.textContent = `Cost: -$${prediction.cost.toFixed(2)}`;
 
             const incomeEl = document.createElement('div');
-            incomeEl.className = 'stat-income';
+            incomeEl.className = 'text-amber-500';
             incomeEl.textContent = `Income: +$${prediction.income.toFixed(2)}`;
 
             const profitEl = document.createElement('div');
-            if (prediction.profit >= 0) {
-                profitEl.className = 'stat-profit-pos';
-            } else {
-                profitEl.className = 'stat-profit-neg';
-            }
+            profitEl.className = prediction.profit >= 0 ? 'text-green-600' : 'text-red-600';
             profitEl.textContent = `Profit: $${prediction.profit.toFixed(2)}`;
 
             statsRow.appendChild(costEl);
             statsRow.appendChild(incomeEl);
             statsRow.appendChild(profitEl);
 
-            // Determine Keyboard Coloring based on Critic
-            // Spec: "If a letter has been tried and is NOT in the secretWord at all, turn that key Bold Red."
-            // "Do not use Yellow/Green"
+            // Keyboard Logic
             const critic = state.activeSlots.find(c => c.type === 'critic');
             const deadLetters = new Set();
+            const discoveredLetters = new Set(); // Candidates (Yellow)
 
             if (critic) {
                 const secret = critic.secretWord;
+                const sessionGuessesStr = critic.sessionGuesses.join("");
+
+                // Identify Dead Letters (Tried & Absent)
                 critic.sessionGuesses.forEach(guess => {
                     for (const char of guess) {
                         if (!secret.includes(char)) {
@@ -303,6 +329,13 @@ export const ui = {
                         }
                     }
                 });
+
+                // Identify Discovered/Candidate Letters (Present in Secret & Found)
+                for (const char of secret) {
+                    if (sessionGuessesStr.includes(char)) {
+                        discoveredLetters.add(char);
+                    }
+                }
             }
 
             const rows = [
@@ -313,48 +346,56 @@ export const ui = {
 
             rows.forEach((rowString, index) => {
                 const rowDiv = document.createElement('div');
-                rowDiv.className = 'keyboard-row';
+                rowDiv.className = 'flex gap-1 w-full justify-center';
 
                 if (index === 2) {
-                    const backBtn = document.createElement('div');
-                    backBtn.className = 'key key-action';
-                    backBtn.textContent = '⌫';
+                    const backBtn = document.createElement('button');
+                    backBtn.className = 'flex-grow-[1.5] h-12 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 font-bold flex items-center justify-center max-w-[60px] active:scale-95 transition-transform';
+                    backBtn.innerHTML = '<i data-lucide="delete" class="w-5 h-5"></i>'; // Lucide Backspace? 'delete' or 'arrow-left'? 'delete' is usually backspace-like.
+                    // Actually Lucide 'delete' is an X in a shield/pentagon. 'backspace' doesn't exist? 'delete' works. 'move-left' maybe?
+                    // Let's use text '⌫' if icon uncertain, or check docs. Lucide has 'delete'.
+                    // I'll stick to text '⌫' for safety or use icon if I can.
+                    // User said "Use lucide.dev for icons".
+                    // Lucide 'delete' is standard. Or 'arrow-left-circle'.
+                    // Let's use text for consistency with previous unless I find 'delete' is good.
+                    // Actually I'll use Lucide.
                     backBtn.onclick = () => InputHandler.handleVirtualKey('BACKSPACE');
                     rowDiv.appendChild(backBtn);
                 }
 
                 for (let char of rowString) {
-                    const keyBtn = document.createElement('div');
-                    keyBtn.className = 'key';
+                    const keyBtn = document.createElement('button');
+                    // Base Class
+                    let keyClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center cursor-pointer select-none active:scale-95 transition-transform max-w-[40px] border border-slate-200';
 
-                    // Coloring Logic
-                    if (deadLetters.has(char)) {
-                         keyBtn.classList.add('key-absent'); // Assume 'key-absent' is red/bold-red styled
+                    // Background Color (Price)
+                    const cost = state.letterCosts[char];
+                    if (typeof cost !== 'undefined') {
+                        if (cost <= 1.00) keyClass += ' bg-cyan-50 border-cyan-200';
+                        else if (cost > 1.00 && cost < 3.00) keyClass += ' bg-orange-50 border-orange-200';
+                        else if (cost >= 3.00) keyClass += ' bg-rose-50 border-rose-200';
                     } else {
-                        // Standard Price Coloring (only if not dead?)
-                        // "Keep the keyboard for 'Dead Letters' only" might mean only show Dead.
-                        // But we probably still want to see prices?
-                        // Spec: "If a letter has been tried and is NOT in the secretWord at all, turn that key Bold Red."
-                        // It doesn't explicitly forbid price colors for others, but says "Do not use Yellow/Green".
-                        // Existing logic uses price colors (cheap/mid/expensive).
-                        // I will preserve price colors for non-dead letters, as that is core game mechanic (economy).
-
-                        const cost = state.letterCosts[char];
-                        if (typeof cost !== 'undefined') {
-                            if (cost <= 1.00) keyBtn.classList.add('key-cheap');
-                            else if (cost > 1.00 && cost < 3.00) keyBtn.classList.add('key-mid');
-                            else if (cost >= 3.00) keyBtn.classList.add('key-expensive');
-                        }
+                        keyClass += ' bg-slate-100';
                     }
 
+                    // Text Color
+                    if (deadLetters.has(char)) {
+                        keyClass += ' text-red-600 font-extrabold'; // Red Text
+                    } else if (discoveredLetters.has(char)) {
+                        keyClass += ' text-yellow-600 font-extrabold'; // Yellow Text (Darker Yellow for contrast)
+                    } else {
+                        keyClass += ' text-slate-700 font-bold';
+                    }
+
+                    keyBtn.className = keyClass;
+
                     const charSpan = document.createElement('div');
-                    charSpan.className = 'key-char';
+                    charSpan.className = 'text-sm leading-none';
                     charSpan.textContent = char;
 
                     const priceSpan = document.createElement('div');
-                    priceSpan.className = 'key-price';
-                    const costVal = state.letterCosts[char];
-                    priceSpan.textContent = typeof costVal !== 'undefined' ? `$${costVal.toFixed(2)}` : '???';
+                    priceSpan.className = 'text-[10px] leading-none opacity-70 mt-0.5';
+                    priceSpan.textContent = typeof cost !== 'undefined' ? `$${cost.toFixed(2)}` : '???';
 
                     keyBtn.appendChild(charSpan);
                     keyBtn.appendChild(priceSpan);
@@ -365,9 +406,9 @@ export const ui = {
                 }
 
                 if (index === 2) {
-                    const enterBtn = document.createElement('div');
-                    enterBtn.className = 'key key-submit';
-                    enterBtn.textContent = '⏎';
+                    const enterBtn = document.createElement('button');
+                    enterBtn.className = 'flex-grow-[1.5] h-12 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 font-bold flex items-center justify-center max-w-[60px] active:scale-95 transition-transform';
+                    enterBtn.innerHTML = '<i data-lucide="corner-down-left" class="w-5 h-5"></i>'; // Enter icon
                     enterBtn.onclick = () => InputHandler.handleVirtualKey('ENTER');
                     rowDiv.appendChild(enterBtn);
                 }
@@ -403,12 +444,7 @@ export const ui = {
         if (!debugBtn) {
             debugBtn = document.createElement('button');
             debugBtn.id = 'debug-toggle';
-            debugBtn.style.position = 'fixed';
-            debugBtn.style.bottom = '10px';
-            debugBtn.style.left = '10px';
-            debugBtn.style.zIndex = '9999';
-            debugBtn.style.fontSize = '12px';
-            debugBtn.style.opacity = '0.7';
+            debugBtn.className = 'fixed bottom-2 left-2 z-50 text-xs px-2 py-1 rounded opacity-70 hover:opacity-100 transition-opacity text-white font-bold';
             document.body.appendChild(debugBtn);
 
             debugBtn.onclick = () => {
@@ -419,28 +455,27 @@ export const ui = {
         }
 
         debugBtn.textContent = state.debugMode ? 'Debug: ON' : 'Debug: OFF';
-        debugBtn.style.backgroundColor = state.debugMode ? '#4CAF50' : '#f44336';
-        debugBtn.style.color = 'white';
+        debugBtn.classList.remove('bg-green-500', 'bg-red-500');
+        debugBtn.classList.add(state.debugMode ? 'bg-green-500' : 'bg-red-500');
     },
 
     animateExits(happyIds, unhappyIds) {
         const container = this.getCustomersContainer();
         if (!container) return Promise.resolve();
 
-        const cards = Array.from(container.querySelectorAll('.customer-card'));
+        const cards = Array.from(container.querySelectorAll('[data-id]')); // Select by data-id
         const animations = [];
 
         cards.forEach(card => {
             const id = card.dataset.id;
             if (happyIds.includes(id)) {
-                card.classList.add('slide-out-right');
+                card.classList.add('animate-slide-out-right');
                 animations.push(new Promise(resolve => {
                     card.addEventListener('animationend', resolve, { once: true });
-                    // Fallback in case animation doesn't fire
                     setTimeout(resolve, 600);
                 }));
             } else if (unhappyIds.includes(id)) {
-                card.classList.add('slide-out-left');
+                card.classList.add('animate-slide-out-left');
                 animations.push(new Promise(resolve => {
                     card.addEventListener('animationend', resolve, { once: true });
                     setTimeout(resolve, 600);
@@ -460,5 +495,10 @@ export const ui = {
         this.renderCustomers(state);
         this.renderKeyboard(state);
         this.renderDebugToggle(state);
+
+        // Initialize Lucide Icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
     }
 };
