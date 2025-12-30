@@ -299,6 +299,7 @@ export const ui = {
             statsRow.innerHTML = '';
 
             const costEl = document.createElement('div');
+            costEl.id = 'cost-display';
             costEl.className = 'text-red-500';
             costEl.textContent = `Cost: -$${prediction.cost.toFixed(2)}`;
 
@@ -307,7 +308,6 @@ export const ui = {
             incomeEl.textContent = `Income: +$${prediction.income.toFixed(2)}`;
 
             const profitEl = document.createElement('div');
-            profitEl.id = 'profit-display';
             profitEl.className = prediction.profit >= 0 ? 'text-green-600' : 'text-red-600';
             profitEl.textContent = `Profit: $${prediction.profit.toFixed(2)}`;
 
@@ -462,14 +462,14 @@ export const ui = {
         debugBtn.classList.add(state.debugMode ? 'bg-green-500' : 'bg-red-500');
     },
 
-    flashProfit() {
-        const profitEl = document.getElementById('profit-display');
-        if (profitEl) {
-            profitEl.classList.remove('animate-glow-orange');
-            void profitEl.offsetWidth; // Trigger reflow
-            profitEl.classList.add('animate-glow-orange');
+    flashCost() {
+        const costEl = document.getElementById('cost-display');
+        if (costEl) {
+            costEl.classList.remove('animate-glow-orange');
+            void costEl.offsetWidth; // Trigger reflow
+            costEl.classList.add('animate-glow-orange');
             setTimeout(() => {
-                profitEl.classList.remove('animate-glow-orange');
+                costEl.classList.remove('animate-glow-orange');
             }, 500);
         }
     },

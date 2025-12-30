@@ -17,7 +17,7 @@ export const InputHandler = {
             }
             ui.render(state);
             if (!result.success && result.message === 'Too Expensive') {
-                ui.flashProfit();
+                ui.flashCost();
             }
             return;
         }
@@ -39,7 +39,7 @@ export const InputHandler = {
             }
             ui.render(state);
             if (!result.success && result.message === 'Too Expensive') {
-                ui.flashProfit();
+                ui.flashCost();
             }
             return;
         }
