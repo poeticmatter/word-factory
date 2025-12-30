@@ -102,8 +102,9 @@ export const GameLogic = {
 
   initializeGame(state) {
     const usedIndices = state.activeSlots.map((c) => c.constraint.index);
+    const broken = state.brokenSlots || [];
     const allIndices = [0, 1, 2, 3, 4];
-    const availableIndices = allIndices.filter((i) => !usedIndices.includes(i));
+    const availableIndices = allIndices.filter((i) => !usedIndices.includes(i) && !broken.includes(i));
 
     while (
       state.activeSlots.length < state.maxSlots &&
@@ -121,8 +122,9 @@ export const GameLogic = {
 
   spawnCriticOrCustomer(state) {
     const usedIndices = state.activeSlots.map((c) => c.constraint.index);
+    const broken = state.brokenSlots || [];
     const allIndices = [0, 1, 2, 3, 4];
-    const availableIndices = allIndices.filter((i) => !usedIndices.includes(i));
+    const availableIndices = allIndices.filter((i) => !usedIndices.includes(i) && !broken.includes(i));
 
     while (
       state.activeSlots.length < state.maxSlots &&
@@ -323,27 +325,27 @@ export const GameLogic = {
         state.toastMessage = `They wanted: ${critic.secretWord}`;
     });
 
+    // Handle Broken Slots for unhappy departures
+    if (!state.brokenSlots) state.brokenSlots = [];
+
+    unhappyDepartures.forEach(c => {
+         const idx = c.constraint.index;
+         if (!state.brokenSlots.includes(idx)) {
+             state.brokenSlots.push(idx);
+             // Assign Review
+             let review = "Walked Out";
+             if (negativeReviews && negativeReviews.length > 0) {
+                 review = negativeReviews[Math.floor(Math.random() * negativeReviews.length)];
+             }
+             state.deadSlotReviews[idx] = review;
+         }
+    });
+
     // Remove all zero patience slots
     state.activeSlots = state.activeSlots.filter((c) => c.patience > 0);
 
-    // Calculate slots lost
-    const departedCount = originalCount - state.activeSlots.length;
-
-    const oldMaxSlots = state.maxSlots;
-    // Reduce max slots for every departure (Standard + Critic Penalty)
-    state.maxSlots = Math.max(0, state.maxSlots - departedCount);
-
-    // Assign reviews for lost slots
-    if (state.maxSlots < oldMaxSlots) {
-        for (let i = state.maxSlots; i < oldMaxSlots; i++) {
-            if (negativeReviews.length > 0) {
-                const randomReview = negativeReviews[Math.floor(Math.random() * negativeReviews.length)];
-                state.deadSlotReviews[i] = randomReview;
-            } else {
-                 state.deadSlotReviews[i] = "Walked Out";
-            }
-        }
-    }
+    // Sync maxSlots with brokenSlots
+    state.maxSlots = Math.max(0, 5 - state.brokenSlots.length);
 
     this.spawnCriticOrCustomer(state);
     state.turnCount++;
