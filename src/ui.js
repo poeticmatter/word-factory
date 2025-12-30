@@ -37,10 +37,12 @@ export const ui = {
                 @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
                 @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
+                @keyframes glowOrange { 0% { text-shadow: 0 0 5px #f97316; } 50% { text-shadow: 0 0 20px #f97316, 0 0 10px #ea580c; } 100% { text-shadow: 0 0 5px #f97316; } }
                 .animate-slide-in { animation: slideInFromLeft 0.5s ease-out forwards; }
                 .animate-slide-in-right { animation: slideInFromRight 0.5s ease-out forwards; }
                 .animate-slide-out-right { animation: slideOutRight 0.5s ease-in forwards; }
                 .animate-slide-out-left { animation: slideOutLeft 0.5s ease-in forwards; }
+                .animate-glow-orange { animation: glowOrange 0.5s ease-in-out; }
             `;
             document.head.appendChild(style);
         }
@@ -305,6 +307,7 @@ export const ui = {
             incomeEl.textContent = `Income: +$${prediction.income.toFixed(2)}`;
 
             const profitEl = document.createElement('div');
+            profitEl.id = 'profit-display';
             profitEl.className = prediction.profit >= 0 ? 'text-green-600' : 'text-red-600';
             profitEl.textContent = `Profit: $${prediction.profit.toFixed(2)}`;
 
@@ -457,6 +460,18 @@ export const ui = {
         debugBtn.textContent = state.debugMode ? 'Debug: ON' : 'Debug: OFF';
         debugBtn.classList.remove('bg-green-500', 'bg-red-500');
         debugBtn.classList.add(state.debugMode ? 'bg-green-500' : 'bg-red-500');
+    },
+
+    flashProfit() {
+        const profitEl = document.getElementById('profit-display');
+        if (profitEl) {
+            profitEl.classList.remove('animate-glow-orange');
+            void profitEl.offsetWidth; // Trigger reflow
+            profitEl.classList.add('animate-glow-orange');
+            setTimeout(() => {
+                profitEl.classList.remove('animate-glow-orange');
+            }, 500);
+        }
     },
 
     animateExits(happyIds, unhappyIds) {
