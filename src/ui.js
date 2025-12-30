@@ -3,7 +3,7 @@ import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
 
 let previousCustomerIds = new Set();
-let previousMaxSlots = 5;
+let previousActiveIndices = new Set([0, 1, 2, 3, 4]);
 
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
@@ -42,28 +42,15 @@ export const ui = {
             state.toastMessage = null;
         }
 
+        const currentActiveIndices = new Set();
+
         // Loop 0 to 4 (Fixed size of 5)
         for (let i = 0; i < 5; i++) {
-            // Condition B (The Graveyard)
-            if (i >= state.maxSlots) {
-                const reviewCard = document.createElement('div');
-                reviewCard.className = 'review-card';
-
-                // Animation Check
-                if (i < previousMaxSlots) {
-                    reviewCard.classList.add('slide-in-right');
-                }
-
-                // Retrieve specific review or fallback
-                const reviewText = state.deadSlotReviews[i] || "Walked Out";
-                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
-                container.appendChild(reviewCard);
-                continue;
-            }
+            const customer = customers.find(c => c.constraint.index === i);
 
             // Condition A (Active Customer)
-            if (i < customers.length) {
-                const customer = customers[i];
+            if (customer) {
+                currentActiveIndices.add(i);
                 const isCritic = customer.type === 'critic';
 
                 const card = document.createElement('div');
@@ -198,12 +185,26 @@ export const ui = {
                 card.appendChild(info);
 
                 container.appendChild(card);
+            } else {
+                // Condition B (Review Card)
+                const reviewCard = document.createElement('div');
+                reviewCard.className = 'review-card';
+
+                // Animation Check: If this slot was previously active, it just closed.
+                if (previousActiveIndices.has(i)) {
+                    reviewCard.classList.add('slide-in-right');
+                }
+
+                // Retrieve specific review or fallback
+                const reviewText = state.deadSlotReviews[i] || "Walked Out";
+                reviewCard.textContent = `★☆☆☆☆ - ${reviewText}`;
+                container.appendChild(reviewCard);
             }
         }
 
         // Cleanup: Update previousCustomerIds with the current list
         previousCustomerIds = new Set(customers.map(c => c.id));
-        previousMaxSlots = state.maxSlots;
+        previousActiveIndices = currentActiveIndices;
     },
 
     renderHUD(state) {
