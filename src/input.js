@@ -12,13 +12,13 @@ export const InputHandler = {
 
         if (key === 'ENTER') {
             const result = GameLogic.processTurn(state);
-            if (!result.success && result.message === 'Too Expensive') {
-                ui.flashProfit();
-            }
             if (result.success && (result.happyDepartedIds.length > 0 || result.unhappyDepartedIds.length > 0)) {
                 await ui.animateExits(result.happyDepartedIds, result.unhappyDepartedIds);
             }
             ui.render(state);
+            if (!result.success && result.message === 'Too Expensive') {
+                ui.flashProfit();
+            }
             return;
         }
 
@@ -34,13 +34,13 @@ export const InputHandler = {
 
         if (key === 'ENTER') {
             const result = GameLogic.processTurn(state);
-            if (!result.success && result.message === 'Too Expensive') {
-                ui.flashProfit();
-            }
             if (result.success && (result.happyDepartedIds.length > 0 || result.unhappyDepartedIds.length > 0)) {
                 await ui.animateExits(result.happyDepartedIds, result.unhappyDepartedIds);
             }
             ui.render(state);
+            if (!result.success && result.message === 'Too Expensive') {
+                ui.flashProfit();
+            }
             return;
         }
 
