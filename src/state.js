@@ -5,7 +5,7 @@ export const state = {
   activeSlots: [],
   buffer: "",
   maxSlots: GAME_CONFIG.MAX_SLOTS,
-  tileBag: [],
+  tileBags: [],
   deadSlotReviews: [],
   keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
   toastMessage: null,
@@ -19,7 +19,7 @@ export const state = {
     this.buffer = "";
     this.maxSlots = GAME_CONFIG.MAX_SLOTS;
     this.brokenSlots = [];
-    this.tileBag = [];
+    this.tileBags = [[], [], [], [], []];
     this.deadSlotReviews = [];
     this.keyboardHints = {};
     this.toastMessage = null;
