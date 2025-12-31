@@ -118,22 +118,21 @@ export const GameLogic = {
     ) {
       const slotIndex = availableIndices.shift();
 
+      // Determine what to spawn based on state.customerSpawnCount
+      // The count represents how many have spawned BEFORE this one.
+      // So the "next" one is customerSpawnCount + 1.
+      const nextSpawnNumber = state.customerSpawnCount + 1;
+
       const activeCritic = state.activeSlots.find(c => c.type === 'critic');
       let spawnCritic = false;
 
-      // Check thresholds
+      // Check if this spawn index is a Critic Spawn
       if (!activeCritic) {
-           if (typeof state.nextCriticThresholdIndex === 'undefined') {
-               state.nextCriticThresholdIndex = 0;
-           }
-
-           if (state.nextCriticThresholdIndex < GAME_CONFIG.CRITIC_THRESHOLDS.length) {
-               const threshold = GAME_CONFIG.CRITIC_THRESHOLDS[state.nextCriticThresholdIndex];
-               if (state.turnCount >= threshold) {
-                   spawnCritic = true;
-                   state.nextCriticThresholdIndex++;
-               }
-           }
+          if (GAME_CONFIG.CRITIC_SPAWN_INDICES.includes(nextSpawnNumber)) {
+              spawnCritic = true;
+          } else if (nextSpawnNumber > 60 && (nextSpawnNumber - 60) % 4 === 0) {
+              spawnCritic = true;
+          }
       }
 
       if (spawnCritic) {
@@ -153,10 +152,12 @@ export const GameLogic = {
               patience: 6, // Starts at 6 (Double normal, roughly)
               constraint: { index: slotIndex }, // Needs a slot to sit in
           });
+          state.customerSpawnCount++;
       } else {
           const customer = this.generateCustomer(state, slotIndex);
           if (customer) {
             state.activeSlots.push(customer);
+            state.customerSpawnCount++;
           }
       }
     }
@@ -213,9 +214,12 @@ export const GameLogic = {
       (c) => !standardMatches.includes(c.id)
     );
 
+    state.customersSatisfied += standardMatches.length;
+
     // Remove defeated critic
     if (criticDefeated) {
         state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
+        state.customersSatisfied += 1;
     }
 
     const endTurnResult = this.endTurn(state);
