@@ -1,21 +1,20 @@
 import {
   GAME_CONFIG,
-  SCRABBLE_DISTRIBUTION,
-  INVALID_POSITIONS,
+  SLOT_DISTRIBUTIONS,
 } from "./config.js";
 import { Dictionary } from "./dictionary.js";
 import { negativeReviews, criticWords } from "./loader.js";
 
 export const GameLogic = {
-  fillTileBag(state) {
-    state.tileBag = [];
-    for (const [char, count] of Object.entries(SCRABBLE_DISTRIBUTION)) {
+  createTileBag(distribution) {
+    const bag = [];
+    for (const [char, count] of Object.entries(distribution)) {
       for (let i = 0; i < count; i++) {
-        state.tileBag.push(char);
+        bag.push(char);
       }
     }
-
-    this.shuffle(state.tileBag);
+    this.shuffle(bag);
+    return bag;
   },
 
   shuffle(array) {
@@ -25,38 +24,23 @@ export const GameLogic = {
     }
   },
 
-  drawTile(state) {
-    if (!state.tileBag || state.tileBag.length === 0) {
-      this.fillTileBag(state);
+  initGame(state) {
+    // Fill the 5 tile bags based on distributions
+    state.tileBags = [];
+    for (let i = 0; i < 5; i++) {
+      state.tileBags[i] = this.createTileBag(SLOT_DISTRIBUTIONS[i]);
     }
-    return state.tileBag.pop();
   },
 
   drawValidTile(state, slotIndex) {
-    let heldTiles = [];
-
-    while (true) {
-      const tile = this.drawTile(state);
-
-      // Check validity
-      // Check if INVALID_POSITIONS has an entry for this slotIndex
-      if (
-        INVALID_POSITIONS[slotIndex] &&
-        INVALID_POSITIONS[slotIndex].includes(tile)
-      ) {
-        heldTiles.push(tile);
-        continue;
-      }
-
-      // If we are here, the tile is valid
-      // Put back held tiles
-      if (heldTiles.length > 0) {
-        state.tileBag.push(...heldTiles);
-        this.shuffle(state.tileBag);
-      }
-
-      return tile;
+    const bag = state.tileBags[slotIndex];
+    if (bag && bag.length > 0) {
+      return bag.pop();
     }
+
+    // Fallback: Random letter
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    return alphabet[Math.floor(Math.random() * alphabet.length)];
   },
 
   generateCustomer(state, slotIndex) {
@@ -74,8 +58,12 @@ export const GameLogic = {
     if (critic) {
         let attempts = 0;
         while (letter === critic.secretWord[slotIndex] && attempts < 10) {
-            state.tileBag.push(letter);
-            this.shuffle(state.tileBag);
+             // Put back in correct bag ONLY if it came from the bag
+             // If we are in fallback mode (bag empty), we don't push back
+             if (state.tileBags[slotIndex] && state.tileBags[slotIndex].length > 0) {
+                 state.tileBags[slotIndex].push(letter);
+                 this.shuffle(state.tileBags[slotIndex]);
+             }
             letter = this.drawValidTile(state, slotIndex);
             attempts++;
         }

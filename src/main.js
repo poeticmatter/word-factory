@@ -30,7 +30,10 @@ async function initApp() {
     // Initialize the game state
     state.init();
 
-    // Game Logic Initialization
+    // Populate tile bags
+    GameLogic.initGame(state);
+
+    // Game Logic Initialization (Spawning customers)
     GameLogic.initializeGame(state);
 
     // Initial Render
