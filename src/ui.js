@@ -8,7 +8,6 @@ let previousActiveIndices = new Set([0, 1, 2, 3, 4]);
 export const ui = {
     getCustomersContainer: () => document.getElementById('customers-container'),
     getInputContainer: () => document.getElementById('input-container'),
-    getCashDisplay: () => document.getElementById('cash-display'),
     getTurnDisplay: () => document.getElementById('turn-display'),
 
     // Helper for gradient colors
@@ -185,11 +184,7 @@ export const ui = {
                 const info = document.createElement('div');
                 info.className = 'flex flex-col items-end justify-center min-w-[80px]';
 
-                // Price
-                const price = document.createElement('div');
-                price.className = isCritic ? 'text-indigo-600 font-bold text-base' : 'text-green-600 font-bold text-base';
-                price.textContent = isCritic ? "CRITIC" : `$${customer.willingPrice.toFixed(2)}`;
-                info.appendChild(price);
+                // Price (Removed)
 
                 // Patience (Watches)
                 const patienceRow = document.createElement('div');
@@ -227,10 +222,7 @@ export const ui = {
     },
 
     renderHUD(state) {
-        const cashDisplay = this.getCashDisplay();
         const turnDisplay = this.getTurnDisplay();
-
-        if (cashDisplay) cashDisplay.textContent = state.cash.toFixed(2);
         if (turnDisplay) turnDisplay.textContent = state.turnCount;
     },
 
@@ -285,32 +277,9 @@ export const ui = {
             }
             bufferDisplay.appendChild(bufferRow);
 
-            // Stats Row
-            const prediction = GameLogic.calculatePrediction(state, state.buffer);
-            let statsRow = document.getElementById('stats-row');
-            if (!statsRow) {
-                statsRow = document.createElement('div');
-                statsRow.id = 'stats-row';
-                statsRow.className = 'flex justify-center gap-4 text-sm font-bold mb-2';
-                inputContainer.insertBefore(statsRow, keyboard);
-            }
-            statsRow.innerHTML = '';
-
-            const costEl = document.createElement('div');
-            costEl.className = 'text-red-500';
-            costEl.textContent = `Cost: -$${prediction.cost.toFixed(2)}`;
-
-            const incomeEl = document.createElement('div');
-            incomeEl.className = 'text-amber-500';
-            incomeEl.textContent = `Income: +$${prediction.income.toFixed(2)}`;
-
-            const profitEl = document.createElement('div');
-            profitEl.className = prediction.profit >= 0 ? 'text-green-600' : 'text-red-600';
-            profitEl.textContent = `Profit: $${prediction.profit.toFixed(2)}`;
-
-            statsRow.appendChild(costEl);
-            statsRow.appendChild(incomeEl);
-            statsRow.appendChild(profitEl);
+            // Stats Row (Removed)
+            const oldStatsRow = document.getElementById('stats-row');
+            if (oldStatsRow) oldStatsRow.remove();
 
             // Keyboard Logic
             const critic = state.activeSlots.find(c => c.type === 'critic');
@@ -366,17 +335,7 @@ export const ui = {
                 for (let char of rowString) {
                     const keyBtn = document.createElement('button');
                     // Base Class
-                    let keyClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center cursor-pointer select-none active:scale-95 transition-transform max-w-[40px] border border-slate-200';
-
-                    // Background Color (Price)
-                    const cost = state.letterCosts[char];
-                    if (typeof cost !== 'undefined') {
-                        if (cost <= 1.00) keyClass += ' bg-cyan-50 border-cyan-200';
-                        else if (cost > 1.00 && cost < 3.00) keyClass += ' bg-orange-50 border-orange-200';
-                        else if (cost >= 3.00) keyClass += ' bg-rose-50 border-rose-200';
-                    } else {
-                        keyClass += ' bg-slate-100';
-                    }
+                    let keyClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center cursor-pointer select-none active:scale-95 transition-transform max-w-[40px] border border-slate-200 bg-slate-100';
 
                     // Text Color
                     if (deadLetters.has(char)) {
@@ -393,12 +352,7 @@ export const ui = {
                     charSpan.className = 'text-sm leading-none';
                     charSpan.textContent = char;
 
-                    const priceSpan = document.createElement('div');
-                    priceSpan.className = 'text-[10px] leading-none opacity-70 mt-0.5';
-                    priceSpan.textContent = typeof cost !== 'undefined' ? `$${cost.toFixed(2)}` : '???';
-
                     keyBtn.appendChild(charSpan);
-                    keyBtn.appendChild(priceSpan);
 
                     keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
 

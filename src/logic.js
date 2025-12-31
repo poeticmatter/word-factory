@@ -82,7 +82,6 @@ export const GameLogic = {
     }
 
     const index = slotIndex;
-    const willingPrice = GAME_CONFIG.BASE_REWARD;
     const seed = Date.now().toString() + Math.random().toString();
     const id = seed;
     const basePatience = GAME_CONFIG.START_PATIENCE + (state.globalPatienceBonus || 0);
@@ -95,7 +94,6 @@ export const GameLogic = {
         letter: letter,
         index: index,
       },
-      willingPrice: parseFloat(willingPrice.toFixed(2)),
       patience: basePatience,
     };
   },
@@ -143,7 +141,7 @@ export const GameLogic = {
 
            if (state.nextCriticThresholdIndex < GAME_CONFIG.CRITIC_THRESHOLDS.length) {
                const threshold = GAME_CONFIG.CRITIC_THRESHOLDS[state.nextCriticThresholdIndex];
-               if (state.totalLifetimeCash >= threshold) {
+               if (state.turnCount >= threshold) {
                    spawnCritic = true;
                    state.nextCriticThresholdIndex++;
                }
@@ -166,7 +164,6 @@ export const GameLogic = {
               sessionGuesses: [],
               patience: 6, // Starts at 6 (Double normal, roughly)
               constraint: { index: slotIndex }, // Needs a slot to sit in
-              willingPrice: 0,
           });
       } else {
           const customer = this.generateCustomer(state, slotIndex);
@@ -178,22 +175,8 @@ export const GameLogic = {
   },
 
   calculatePrediction(state, currentBuffer) {
-    let cost = 0;
-    for (let char of currentBuffer) {
-      cost += state.letterCosts[char] || 0;
-    }
-
-    let income = 0;
-    state.activeSlots.forEach((customer) => {
-      if (currentBuffer.length > customer.constraint.index) {
-        const charAtConstraint = currentBuffer[customer.constraint.index];
-        if (charAtConstraint === customer.constraint.letter) {
-          income += customer.willingPrice;
-        }
-      }
-    });
-
-    return { cost, income, profit: income - cost };
+    // No prediction logic needed without economy
+    return {};
   },
 
   processTurn(state) {
@@ -205,36 +188,15 @@ export const GameLogic = {
       return { success: false, message: "Unknown Word" };
     }
 
-    // Cost
-    let cost = 0;
-    for (let char of state.buffer) {
-      cost += state.letterCosts[char];
-    }
-
-    if (cost > state.cash) {
-      return { success: false, message: "Too Expensive" };
-    }
-
     const matches = [];
-    let revenue = 0;
 
     state.activeSlots.forEach((customer) => {
       // Logic for standard customers
       const charAtConstraint = state.buffer[customer.constraint.index];
       if (charAtConstraint === customer.constraint.letter) {
         matches.push(customer.id);
-        revenue += customer.willingPrice;
       }
     });
-
-    state.cash = state.cash - cost + revenue;
-    state.totalLifetimeCash += revenue;
-
-    // Inflation
-    const usedLetters = new Set(state.buffer.split(""));
-    for (let char of state.buffer) {
-      state.letterCosts[char] *= GAME_CONFIG.INFLATION_RATE;
-    }
 
     // Critic Logic
     const critic = state.activeSlots.find(c => c.type === 'critic');
@@ -268,7 +230,7 @@ export const GameLogic = {
         state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
     }
 
-    const endTurnResult = this.endTurn(state, usedLetters);
+    const endTurnResult = this.endTurn(state);
 
     state.buffer = "";
     return {
@@ -280,7 +242,7 @@ export const GameLogic = {
   },
 
   skipTurn(state) {
-    const endTurnResult = this.endTurn(state, new Set());
+    const endTurnResult = this.endTurn(state);
     state.buffer = "";
     return {
         success: true,
@@ -289,24 +251,10 @@ export const GameLogic = {
     };
   },
 
-  endTurn(state, usedLettersSet = new Set()) {
-    // Deflation
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (let char of alphabet) {
-      if (!usedLettersSet.has(char)) {
-        state.letterCosts[char] = Math.max(
-          GAME_CONFIG.MIN_LETTER_COST,
-          state.letterCosts[char] * GAME_CONFIG.DEFLATION_RATE
-        );
-      }
-    }
-
+  endTurn(state) {
     // Decay
     state.activeSlots.forEach((c) => {
       c.patience -= 1;
-      c.willingPrice = parseFloat(
-        (c.willingPrice - GAME_CONFIG.PRICE_DECAY).toFixed(2)
-      );
     });
 
     // Departure Logic
