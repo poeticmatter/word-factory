@@ -16,9 +16,6 @@
         <h1 class="text-2xl font-bold text-slate-700">Word Shop</h1>
         <div id="hud" class="flex gap-4 text-sm font-semibold text-slate-600">
           <div class="hud-item bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
-            Cash: $<span id="cash-display">0.00</span>
-          </div>
-          <div class="hud-item bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
             Turn: <span id="turn-display">0</span>
           </div>
           <button id="help-btn" class="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs hover:bg-blue-600 transition-colors">?</button>
@@ -47,12 +44,12 @@
             </div>
             <div class="space-y-3 text-sm text-slate-600">
                 <ul class="list-disc pl-5 space-y-2">
-                    <li><strong>Fill Orders:</strong> Build words that match customer requests (e.g., "Starts with A").</li>
-                    <li><strong>The Market:</strong> Buying letters spikes the cost. Waiting drops it. <strong class="text-green-600">Buy low!</strong></li>
-                    <li><strong>Combos:</strong> Satisfy 2+ orders with one word. You buy the letters once, but get paid by everyone!</li>
-                    <li><strong>Survival:</strong> Customers lose <strong>Patience</strong> over time. If they run out, they leave a bad review.</li>
+                    <li><strong>Fill Orders:</strong> Customers need specific letters in specific spots. (e.g. If Customer 1 wants 'A', your word must start with 'A').</li>
+                    <li><strong>Beat the Boss:</strong> Critics appear periodically with a secret word. Guess words to find clues (Yellow letters). Deduce their secret word to defeat them!</li>
+                    <li><strong>Stay Alive:</strong> Customers lose <strong>Patience</strong> over time. If they run out, they leave a bad review.</li>
+                    <li><strong>Combos:</strong> Clear multiple customers with a single word to save turns.</li>
                 </ul>
-                <p class="font-medium text-center pt-2"><em>Game Over if you lose all seats or run out of cash!</em></p>
+                <p class="font-medium text-center pt-2"><em>Game Over if you lose all seats!</em></p>
                 <button id="start-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg mt-4 transition-colors shadow-md">Got it!</button>
                 <p class="dedication text-xs text-center text-slate-400 italic mt-4">Dedicated to the memory of Jim, a dear friend, who would have loved this game.</p>
             </div>
