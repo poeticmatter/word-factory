@@ -1,31 +1,29 @@
-import { GAME_CONFIG } from './config.js';
+import { GAME_CONFIG } from "./config.js";
 
 export const state = {
-    turnCount: 0,
-    activeSlots: [],
-    buffer: "",
-    maxSlots: GAME_CONFIG.MAX_SLOTS,
-    tileBag: [],
-    deadSlotReviews: [],
-    globalPatienceBonus: 0,
-    keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
-    toastMessage: null,
-    nextCriticThresholdIndex: 0,
-    debugMode: false,
-    brokenSlots: [],
+  turnCount: 0,
+  activeSlots: [],
+  buffer: "",
+  maxSlots: GAME_CONFIG.MAX_SLOTS,
+  tileBag: [],
+  deadSlotReviews: [],
+  keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
+  toastMessage: null,
+  nextCriticThresholdIndex: 0,
+  debugMode: false,
+  brokenSlots: [],
 
-    init() {
-        this.turnCount = 0;
-        this.activeSlots = [];
-        this.buffer = "";
-        this.maxSlots = GAME_CONFIG.MAX_SLOTS;
-        this.brokenSlots = [];
-        this.tileBag = [];
-        this.deadSlotReviews = [];
-        this.globalPatienceBonus = 0;
-        this.keyboardHints = {};
-        this.toastMessage = null;
-        this.nextCriticThresholdIndex = 0;
-        this.debugMode = false;
-    }
+  init() {
+    this.turnCount = 0;
+    this.activeSlots = [];
+    this.buffer = "";
+    this.maxSlots = GAME_CONFIG.MAX_SLOTS;
+    this.brokenSlots = [];
+    this.tileBag = [];
+    this.deadSlotReviews = [];
+    this.keyboardHints = {};
+    this.toastMessage = null;
+    this.nextCriticThresholdIndex = 0;
+    this.debugMode = false;
+  },
 };
