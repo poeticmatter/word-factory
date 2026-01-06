@@ -222,8 +222,8 @@ export const ui = {
     },
 
     renderHUD(state) {
-        const turnDisplay = this.getTurnDisplay();
-        if (turnDisplay) turnDisplay.textContent = state.turnCount;
+        const scoreDisplay = document.getElementById('score-display');
+        if (scoreDisplay) scoreDisplay.textContent = state.customersSatisfied;
     },
 
     renderKeyboard(state) {

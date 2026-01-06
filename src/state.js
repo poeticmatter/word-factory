@@ -2,6 +2,8 @@ import { GAME_CONFIG } from "./config.js";
 
 export const state = {
   turnCount: 0,
+  customerSpawnCount: 0,
+  customersSatisfied: 0,
   activeSlots: [],
   buffer: "",
   maxSlots: GAME_CONFIG.MAX_SLOTS,
@@ -15,6 +17,8 @@ export const state = {
 
   init() {
     this.turnCount = 0;
+    this.customerSpawnCount = 0;
+    this.customersSatisfied = 0;
     this.activeSlots = [];
     this.buffer = "";
     this.maxSlots = GAME_CONFIG.MAX_SLOTS;
