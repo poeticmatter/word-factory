@@ -36,10 +36,12 @@ export const ui = {
                 @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
                 @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
+                @keyframes blinkRedBorder { 0%, 100% { border-color: inherit; } 50% { border-color: #ef4444; box-shadow: 0 0 0 2px #ef4444; } }
                 .animate-slide-in { animation: slideInFromLeft 0.5s ease-out forwards; }
                 .animate-slide-in-right { animation: slideInFromRight 0.5s ease-out forwards; }
                 .animate-slide-out-right { animation: slideOutRight 0.5s ease-in forwards; }
                 .animate-slide-out-left { animation: slideOutLeft 0.5s ease-in forwards; }
+                .animate-blink-red { animation: blinkRedBorder 1s infinite; }
             `;
             document.head.appendChild(style);
         }
@@ -281,6 +283,12 @@ export const ui = {
             const oldStatsRow = document.getElementById('stats-row');
             if (oldStatsRow) oldStatsRow.remove();
 
+            // Calculate Buffer Counts for Warning
+            const bufferCounts = {};
+            for (const char of state.buffer) {
+                bufferCounts[char] = (bufferCounts[char] || 0) + 1;
+            }
+
             // Keyboard Logic
             const critic = state.activeSlots.find(c => c.type === 'critic');
             const deadLetters = new Set();
@@ -340,6 +348,13 @@ export const ui = {
                     let bgClass = 'bg-slate-100 border-slate-200';
                     let textClass = 'text-slate-700 font-bold';
                     let interactClass = 'cursor-pointer active:scale-95 hover:brightness-95';
+
+                    // Warning Logic
+                    // If heat + buffer usage >= 4, and not already exploded
+                    const usageInBuffer = bufferCounts[char] || 0;
+                    if (heat < 4 && (heat + usageInBuffer) >= 4) {
+                        baseClass += ' animate-blink-red';
+                    }
 
                     // 1. Heat State (Backgrounds)
                     if (heat === 1) {
