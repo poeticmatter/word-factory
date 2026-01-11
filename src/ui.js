@@ -1,6 +1,7 @@
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
+import { GAME_CONFIG } from './config.js';
 
 let previousCustomerIds = new Set();
 let previousActiveIndices = new Set([0, 1, 2, 3, 4]);
@@ -350,28 +351,33 @@ export const ui = {
                     let interactClass = 'cursor-pointer active:scale-95 hover:brightness-95';
 
                     // Warning Logic
-                    // If heat + buffer usage >= 4, and not already exploded
+                    // If heat + projected usage >= MAX, and not already exploded
+                    // Projected increment = usageInBuffer * INCREMENT
                     const usageInBuffer = bufferCounts[char] || 0;
-                    if (heat < 4 && (heat + usageInBuffer) >= 4) {
+                    const projectedHeat = heat + (usageInBuffer * GAME_CONFIG.HEAT_MECHANIC.INCREMENT);
+
+                    if (heat < GAME_CONFIG.HEAT_MECHANIC.MAX && projectedHeat >= GAME_CONFIG.HEAT_MECHANIC.MAX) {
                         baseClass += ' animate-blink-red';
                     }
 
                     // 1. Heat State (Backgrounds)
                     if (heat === 1) {
-                         bgClass = 'bg-orange-100 border-orange-200';
+                         bgClass = 'bg-yellow-100 border-yellow-200'; // Slightly lighter for 1
                     } else if (heat === 2) {
-                         bgClass = 'bg-orange-300 border-orange-400';
+                         bgClass = 'bg-orange-100 border-orange-200';
                     } else if (heat === 3) {
+                         bgClass = 'bg-orange-300 border-orange-400';
+                    } else if (heat === 4) {
                          bgClass = 'bg-red-500 border-red-600';
                          textClass = 'text-white font-bold';
-                    } else if (heat >= 4) {
+                    } else if (heat >= 5) { // GAME_CONFIG.HEAT_MECHANIC.MAX
                          bgClass = 'bg-slate-800 border-slate-900';
                          textClass = 'text-slate-500 font-normal line-through';
                          interactClass = 'cursor-not-allowed opacity-80';
                     }
 
                     // 2. Critic Feedback (Text Overrides) - Only if not exploded
-                    if (heat < 4) {
+                    if (heat < GAME_CONFIG.HEAT_MECHANIC.MAX) {
                         if (deadLetters.has(char)) {
                              // Red Text (Absent)
                              // If BG is Red (Heat 3), change to Black for contrast

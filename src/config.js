@@ -2,6 +2,11 @@ export const GAME_CONFIG = {
   MAX_SLOTS: 5,
   START_PATIENCE: 5,
   CRITIC_SPAWN_INDICES: [11, 21, 30, 38, 45, 51, 56, 60],
+  HEAT_MECHANIC: {
+    INCREMENT: 2,
+    DECAY: 1,
+    MAX: 5,
+  }
 };
 
 // 0-based Index mapping for 5-letter words.

@@ -177,18 +177,20 @@ export const GameLogic = {
         wordCounts[char] = (wordCounts[char] || 0) + 1;
     }
 
+    const { INCREMENT, DECAY, MAX } = GAME_CONFIG.HEAT_MECHANIC;
+
     // Iterate all letters
     for (let i = 65; i <= 90; i++) {
         const char = String.fromCharCode(i);
 
         // If already exploded, skip (it stays broken)
-        if (state.keyHeat[char] >= 4) continue;
+        if (state.keyHeat[char] >= MAX) continue;
 
         if (wordCounts[char]) {
-            state.keyHeat[char] += wordCounts[char];
+            state.keyHeat[char] += (wordCounts[char] * INCREMENT);
         } else {
             // Decrement unused letters
-            state.keyHeat[char] = Math.max(0, state.keyHeat[char] - 1);
+            state.keyHeat[char] = Math.max(0, state.keyHeat[char] - DECAY);
         }
     }
   },
