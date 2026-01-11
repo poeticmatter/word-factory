@@ -168,6 +168,31 @@ export const GameLogic = {
     return {};
   },
 
+  updateKeyHeat(state, word) {
+    if (!state.keyHeat) return;
+
+    // Count occurrences in the word
+    const wordCounts = {};
+    for (const char of word) {
+        wordCounts[char] = (wordCounts[char] || 0) + 1;
+    }
+
+    // Iterate all letters
+    for (let i = 65; i <= 90; i++) {
+        const char = String.fromCharCode(i);
+
+        // If already exploded, skip (it stays broken)
+        if (state.keyHeat[char] >= 4) continue;
+
+        if (wordCounts[char]) {
+            state.keyHeat[char] += wordCounts[char];
+        } else {
+            // Decrement unused letters
+            state.keyHeat[char] = Math.max(0, state.keyHeat[char] - 1);
+        }
+    }
+  },
+
   processTurn(state) {
     if (state.buffer.length !== 5) {
       return { success: false, message: "Word must be 5 letters" };
@@ -221,6 +246,8 @@ export const GameLogic = {
         state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
         state.customersSatisfied += 1;
     }
+
+    this.updateKeyHeat(state, state.buffer);
 
     const endTurnResult = this.endTurn(state);
 

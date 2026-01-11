@@ -334,19 +334,42 @@ export const ui = {
 
                 for (let char of rowString) {
                     const keyBtn = document.createElement('button');
-                    // Base Class
-                    let keyClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center cursor-pointer select-none active:scale-95 transition-transform max-w-[40px] border border-slate-200 bg-slate-100';
+                    const heat = state.keyHeat ? state.keyHeat[char] : 0;
 
-                    // Text Color
-                    if (deadLetters.has(char)) {
-                        keyClass += ' text-red-600 font-extrabold'; // Red Text
-                    } else if (discoveredLetters.has(char)) {
-                        keyClass += ' text-yellow-600 font-extrabold'; // Yellow Text (Darker Yellow for contrast)
-                    } else {
-                        keyClass += ' text-slate-700 font-bold';
+                    let baseClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center select-none max-w-[40px] border transition-all duration-200';
+                    let bgClass = 'bg-slate-100 border-slate-200';
+                    let textClass = 'text-slate-700 font-bold';
+                    let interactClass = 'cursor-pointer active:scale-95 hover:brightness-95';
+
+                    // 1. Heat State (Backgrounds)
+                    if (heat === 1) {
+                         bgClass = 'bg-orange-100 border-orange-200';
+                    } else if (heat === 2) {
+                         bgClass = 'bg-orange-300 border-orange-400';
+                    } else if (heat === 3) {
+                         bgClass = 'bg-red-500 border-red-600';
+                         textClass = 'text-white font-bold';
+                    } else if (heat >= 4) {
+                         bgClass = 'bg-slate-800 border-slate-900';
+                         textClass = 'text-slate-500 font-normal line-through';
+                         interactClass = 'cursor-not-allowed opacity-80';
                     }
 
-                    keyBtn.className = keyClass;
+                    // 2. Critic Feedback (Text Overrides) - Only if not exploded
+                    if (heat < 4) {
+                        if (deadLetters.has(char)) {
+                             // Red Text (Absent)
+                             // If BG is Red (Heat 3), change to Black for contrast
+                             if (heat === 3) textClass = 'text-slate-900 font-extrabold';
+                             else textClass = 'text-red-600 font-extrabold';
+                        } else if (discoveredLetters.has(char)) {
+                             // Yellow Text (Present)
+                             if (heat === 3) textClass = 'text-yellow-300 font-extrabold';
+                             else textClass = 'text-yellow-700 font-extrabold'; // Darker yellow for orange/slate bg
+                        }
+                    }
+
+                    keyBtn.className = `${baseClass} ${bgClass} ${textClass} ${interactClass}`;
 
                     const charSpan = document.createElement('div');
                     charSpan.className = 'text-sm leading-none';
@@ -354,7 +377,9 @@ export const ui = {
 
                     keyBtn.appendChild(charSpan);
 
-                    keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
+                    if (heat < 4) {
+                        keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
+                    }
 
                     rowDiv.appendChild(keyBtn);
                 }

@@ -20,7 +20,13 @@ export const InputHandler = {
         }
 
         if (state.buffer.length < 5 && key.length === 1) {
-            state.buffer += key;
+            // Check heat
+            const upperKey = key.toUpperCase();
+            if (state.keyHeat && state.keyHeat[upperKey] >= 4) {
+                // Key Exploded - ignore input
+                return;
+            }
+            state.buffer += upperKey;
             ui.render(state);
         }
     },

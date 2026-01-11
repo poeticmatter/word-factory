@@ -14,6 +14,7 @@ export const state = {
   nextCriticThresholdIndex: 0,
   debugMode: false,
   brokenSlots: [],
+  keyHeat: {}, // { char: heatLevel (0-4) }
 
   init() {
     this.turnCount = 0;
@@ -29,5 +30,11 @@ export const state = {
     this.toastMessage = null;
     this.nextCriticThresholdIndex = 0;
     this.debugMode = false;
+
+    // Initialize key heat to 0 for A-Z
+    this.keyHeat = {};
+    for (let i = 65; i <= 90; i++) {
+        this.keyHeat[String.fromCharCode(i)] = 0;
+    }
   },
 };
