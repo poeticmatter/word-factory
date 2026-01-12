@@ -4,7 +4,7 @@ import { ui } from './ui.js';
 import { GameLogic } from './logic.js';
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
-import { loadReviews, loadCriticWords } from './loader.js';
+import { loadReviews } from './loader.js';
 
 console.log("Game System Initialized");
 
@@ -17,7 +17,6 @@ async function initApp() {
     try {
         await Dictionary.loadDictionary();
         await loadReviews();
-        await loadCriticWords();
     } catch (e) {
         console.error("Critical Error during initialization:", e);
         alert("Failed to load game resources. " + e.message);

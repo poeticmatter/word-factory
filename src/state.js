@@ -11,7 +11,6 @@ export const state = {
   deadSlotReviews: [],
   keyboardHints: {}, // { char: 'correct' | 'present' | 'absent' }
   toastMessage: null,
-  nextCriticThresholdIndex: 0,
   debugMode: false,
   brokenSlots: [],
   keyHeat: {}, // { char: heatLevel (0-4) }
@@ -28,7 +27,6 @@ export const state = {
     this.deadSlotReviews = [];
     this.keyboardHints = {};
     this.toastMessage = null;
-    this.nextCriticThresholdIndex = 0;
     this.debugMode = false;
 
     // Initialize key heat to 0 for A-Z

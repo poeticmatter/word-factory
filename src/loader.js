@@ -1,5 +1,4 @@
 export const negativeReviews = [];
-export const criticWords = [];
 
 export async function loadReviews() {
     try {
@@ -16,19 +15,4 @@ export async function loadReviews() {
     } catch (e) {
         console.error("Error loading reviews:", e);
     }
-}
-
-export async function loadCriticWords() {
-    const response = await fetch('critic.txt');
-    if (!response.ok) {
-        throw new Error("Failed to load critic.txt");
-    }
-    const text = await response.text();
-    const words = text.split('\n')
-        .map(w => w.trim())
-        .filter(w => w.length > 0 && !w.startsWith('#'))
-        .map(w => w.toUpperCase());
-
-    criticWords.push(...words);
-    console.log("Critic words loaded:", criticWords.length);
 }
