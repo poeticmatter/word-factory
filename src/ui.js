@@ -301,7 +301,7 @@ export const ui = {
 
                     keyBtn.appendChild(charSpan);
 
-                    if (heat < 4) {
+                    if (heat < GAME_CONFIG.HEAT_MECHANIC.MAX) {
                         keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
                     }
 
