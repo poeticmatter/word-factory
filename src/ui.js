@@ -1,6 +1,7 @@
 import { InputHandler } from './input.js';
 import { Dictionary } from './dictionary.js';
 import { GameLogic } from './logic.js';
+import { GAME_CONFIG } from './config.js';
 
 let previousCustomerIds = new Set();
 let previousActiveIndices = new Set([0, 1, 2, 3, 4]);
@@ -36,10 +37,12 @@ export const ui = {
                 @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
                 @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-120%); opacity: 0; } }
+                @keyframes blinkRedBorder { 0%, 100% { border-color: inherit; } 50% { border-color: #ef4444; box-shadow: 0 0 0 2px #ef4444; } }
                 .animate-slide-in { animation: slideInFromLeft 0.5s ease-out forwards; }
                 .animate-slide-in-right { animation: slideInFromRight 0.5s ease-out forwards; }
                 .animate-slide-out-right { animation: slideOutRight 0.5s ease-in forwards; }
                 .animate-slide-out-left { animation: slideOutLeft 0.5s ease-in forwards; }
+                .animate-blink-red { animation: blinkRedBorder 1s infinite; }
             `;
             document.head.appendChild(style);
         }
@@ -85,13 +88,12 @@ export const ui = {
 
             if (customer) {
                 currentActiveIndices.add(i);
-                const isCritic = customer.type === 'critic';
 
                 // Main Card Container - Grid Layout
                 // [Avatar] [Slots] [Stats]
                 // Stats column fixed width to align hearts/prices
                 const card = document.createElement('div');
-                card.className = `relative bg-white border border-slate-200 rounded-lg shadow-sm p-2 grid grid-cols-[auto_1fr_100px] gap-3 items-center h-16 ${isCritic ? 'border-l-4 border-l-indigo-500 bg-indigo-50/50' : ''}`;
+                card.className = `relative bg-white border border-slate-200 rounded-lg shadow-sm p-2 grid grid-cols-[auto_1fr_100px] gap-3 items-center h-16`;
                 card.dataset.id = customer.id;
 
                 if (!previousCustomerIds.has(customer.id)) {
@@ -102,79 +104,22 @@ export const ui = {
                 const img = document.createElement('img');
                 img.src = `https://api.dicebear.com/9.x/personas/svg?seed=${customer.seed}`;
                 img.alt = 'Portrait';
-                img.className = `w-12 h-12 rounded-full border border-slate-300 ${isCritic ? 'grayscale contrast-125' : ''}`;
+                img.className = `w-12 h-12 rounded-full border border-slate-300`;
                 card.appendChild(img);
 
                 // 2. Slots Row (Center)
                 const slotRow = document.createElement('div');
                 slotRow.className = 'flex gap-1 justify-center items-center';
 
-                // Logic for Critic Clues
-                let discoveredLetters = new Set();
-                if (isCritic) {
-                    const sessionGuessString = customer.sessionGuesses.join("");
-                    for (const char of customer.secretWord) {
-                        if (sessionGuessString.includes(char)) {
-                            discoveredLetters.add(char);
-                        }
-                    }
-                }
-
                 for (let j = 0; j < 5; j++) {
                     const slot = document.createElement('div');
                     // Tailwind slot styling
                     slot.className = 'w-8 h-8 flex items-center justify-center border border-slate-300 rounded bg-white relative font-mono text-lg font-bold text-slate-800';
 
-                    if (isCritic) {
-                        const secretChar = customer.secretWord[j];
-                        let isSolved = false;
-                        for (const guess of customer.sessionGuesses) {
-                            if (guess[j] === secretChar) {
-                                isSolved = true;
-                                break;
-                            }
-                        }
-
-                        if (isSolved) {
-                            slot.textContent = secretChar;
-                            slot.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
-                        } else {
-                            // Pencil Grid 2x2
-                            const grid = document.createElement('div');
-                            grid.className = 'absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 p-0.5 pointer-events-none';
-
-                            const potentialMarks = [];
-                            discoveredLetters.forEach(char => {
-                                let alreadyGuessedAtThisPos = false;
-                                for (const guess of customer.sessionGuesses) {
-                                    if (guess[j] === char) {
-                                        alreadyGuessedAtThisPos = true;
-                                        break;
-                                    }
-                                }
-                                if (!alreadyGuessedAtThisPos) {
-                                    potentialMarks.push(char);
-                                }
-                            });
-                            potentialMarks.sort();
-
-                            // Limit to 4 for 2x2 grid (per user instruction to ignore overflow)
-                            potentialMarks.slice(0, 4).forEach(markChar => {
-                                const mark = document.createElement('span');
-                                // "A bit larger" -> text-[10px] or text-xs (0.75rem=12px might be too big for 2x2 in 32px box)
-                                // 32px / 2 = 16px per cell. 10px font fits.
-                                mark.className = 'flex items-center justify-center text-[10px] leading-none text-yellow-600 font-bold';
-                                mark.textContent = markChar;
-                                grid.appendChild(mark);
-                            });
-                            slot.appendChild(grid);
-                        }
-                    } else {
-                        // Standard Customer
-                        if (j === customer.constraint.index) {
-                            slot.textContent = customer.constraint.letter;
-                            slot.classList.add('bg-slate-50', 'border-slate-400');
-                        }
+                    // Standard Customer
+                    if (j === customer.constraint.index) {
+                        slot.textContent = customer.constraint.letter;
+                        slot.classList.add('bg-slate-50', 'border-slate-400');
                     }
                     slotRow.appendChild(slot);
                 }
@@ -281,32 +226,13 @@ export const ui = {
             const oldStatsRow = document.getElementById('stats-row');
             if (oldStatsRow) oldStatsRow.remove();
 
-            // Keyboard Logic
-            const critic = state.activeSlots.find(c => c.type === 'critic');
-            const deadLetters = new Set();
-            const discoveredLetters = new Set(); // Candidates (Yellow)
-
-            if (critic) {
-                const secret = critic.secretWord;
-                const sessionGuessesStr = critic.sessionGuesses.join("");
-
-                // Identify Dead Letters (Tried & Absent)
-                critic.sessionGuesses.forEach(guess => {
-                    for (const char of guess) {
-                        if (!secret.includes(char)) {
-                            deadLetters.add(char);
-                        }
-                    }
-                });
-
-                // Identify Discovered/Candidate Letters (Present in Secret & Found)
-                for (const char of secret) {
-                    if (sessionGuessesStr.includes(char)) {
-                        discoveredLetters.add(char);
-                    }
-                }
+            // Calculate Buffer Counts for Warning
+            const bufferCounts = {};
+            for (const char of state.buffer) {
+                bufferCounts[char] = (bufferCounts[char] || 0) + 1;
             }
 
+            // Keyboard Logic
             const rows = [
                 "QWERTYUIOP",
                 "ASDFGHJKL",
@@ -334,19 +260,40 @@ export const ui = {
 
                 for (let char of rowString) {
                     const keyBtn = document.createElement('button');
-                    // Base Class
-                    let keyClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center cursor-pointer select-none active:scale-95 transition-transform max-w-[40px] border border-slate-200 bg-slate-100';
+                    const heat = state.keyHeat ? state.keyHeat[char] : 0;
 
-                    // Text Color
-                    if (deadLetters.has(char)) {
-                        keyClass += ' text-red-600 font-extrabold'; // Red Text
-                    } else if (discoveredLetters.has(char)) {
-                        keyClass += ' text-yellow-600 font-extrabold'; // Yellow Text (Darker Yellow for contrast)
-                    } else {
-                        keyClass += ' text-slate-700 font-bold';
+                    let baseClass = 'flex-1 h-12 rounded flex flex-col items-center justify-center select-none max-w-[40px] border transition-all duration-200';
+                    let bgClass = 'bg-slate-100 border-slate-200';
+                    let textClass = 'text-slate-700 font-bold';
+                    let interactClass = 'cursor-pointer active:scale-95 hover:brightness-95';
+
+                    // Warning Logic
+                    // If heat + projected usage >= MAX, and not already exploded
+                    // Projected increment = usageInBuffer * INCREMENT
+                    const usageInBuffer = bufferCounts[char] || 0;
+                    const projectedHeat = heat + (usageInBuffer * GAME_CONFIG.HEAT_MECHANIC.INCREMENT);
+
+                    if (heat < GAME_CONFIG.HEAT_MECHANIC.MAX && projectedHeat >= GAME_CONFIG.HEAT_MECHANIC.MAX) {
+                        baseClass += ' animate-blink-red';
                     }
 
-                    keyBtn.className = keyClass;
+                    // 1. Heat State (Backgrounds)
+                    if (heat === 1) {
+                         bgClass = 'bg-yellow-100 border-yellow-200'; // Slightly lighter for 1
+                    } else if (heat === 2) {
+                         bgClass = 'bg-orange-100 border-orange-200';
+                    } else if (heat === 3) {
+                         bgClass = 'bg-orange-300 border-orange-400';
+                    } else if (heat === 4) {
+                         bgClass = 'bg-red-500 border-red-600';
+                         textClass = 'text-white font-bold';
+                    } else if (heat >= 5) { // GAME_CONFIG.HEAT_MECHANIC.MAX
+                         bgClass = 'bg-slate-800 border-slate-900';
+                         textClass = 'text-slate-500 font-normal line-through';
+                         interactClass = 'cursor-not-allowed opacity-80';
+                    }
+
+                    keyBtn.className = `${baseClass} ${bgClass} ${textClass} ${interactClass}`;
 
                     const charSpan = document.createElement('div');
                     charSpan.className = 'text-sm leading-none';
@@ -354,7 +301,9 @@ export const ui = {
 
                     keyBtn.appendChild(charSpan);
 
-                    keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
+                    if (heat < GAME_CONFIG.HEAT_MECHANIC.MAX) {
+                        keyBtn.onclick = () => InputHandler.handleVirtualKey(char);
+                    }
 
                     rowDiv.appendChild(keyBtn);
                 }

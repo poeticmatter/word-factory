@@ -3,7 +3,7 @@ import {
   SLOT_DISTRIBUTIONS,
 } from "./config.js";
 import { Dictionary } from "./dictionary.js";
-import { negativeReviews, criticWords } from "./loader.js";
+import { negativeReviews } from "./loader.js";
 
 export const GameLogic = {
   createTileBag(distribution) {
@@ -48,27 +48,7 @@ export const GameLogic = {
       return null;
     }
 
-    // Check for Critic Constraint
-    const critic = state.activeSlots.find(c => c.type === 'critic');
     let letter = this.drawValidTile(state, slotIndex);
-
-    // If there is a critic, ensure the drawn tile at slotIndex does NOT match critic's secret word at slotIndex
-    // This avoids accidental "clues" from normal customers? Or just avoiding conflict?
-    // User didn't ask for this, but it was in previous logic. I'll keep it safe.
-    if (critic) {
-        let attempts = 0;
-        while (letter === critic.secretWord[slotIndex] && attempts < 10) {
-             // Put back in correct bag ONLY if it came from the bag
-             // If we are in fallback mode (bag empty), we don't push back
-             if (state.tileBags[slotIndex] && state.tileBags[slotIndex].length > 0) {
-                 state.tileBags[slotIndex].push(letter);
-                 this.shuffle(state.tileBags[slotIndex]);
-             }
-            letter = this.drawValidTile(state, slotIndex);
-            attempts++;
-        }
-    }
-
     const index = slotIndex;
     const seed = Date.now().toString() + Math.random().toString();
     const id = seed;
@@ -106,7 +86,7 @@ export const GameLogic = {
     state.activeSlots.sort((a, b) => a.constraint.index - b.constraint.index);
   },
 
-  spawnCriticOrCustomer(state) {
+  spawnCustomer(state) {
     const usedIndices = state.activeSlots.map((c) => c.constraint.index);
     const broken = state.brokenSlots || [];
     const allIndices = [0, 1, 2, 3, 4];
@@ -117,48 +97,10 @@ export const GameLogic = {
       availableIndices.length > 0
     ) {
       const slotIndex = availableIndices.shift();
-
-      // Determine what to spawn based on state.customerSpawnCount
-      // The count represents how many have spawned BEFORE this one.
-      // So the "next" one is customerSpawnCount + 1.
-      const nextSpawnNumber = state.customerSpawnCount + 1;
-
-      const activeCritic = state.activeSlots.find(c => c.type === 'critic');
-      let spawnCritic = false;
-
-      // Check if this spawn index is a Critic Spawn
-      if (!activeCritic) {
-          if (GAME_CONFIG.CRITIC_SPAWN_INDICES.includes(nextSpawnNumber)) {
-              spawnCritic = true;
-          } else if (nextSpawnNumber > 60 && (nextSpawnNumber - 60) % 4 === 0) {
-              spawnCritic = true;
-          }
-      }
-
-      if (spawnCritic) {
-          // Select from criticWords if available, else fallback (though loader ensures it shouldn't fail)
-          const secretWord = criticWords.length > 0
-              ? criticWords[Math.floor(Math.random() * criticWords.length)]
-              : Dictionary.getRandomWord();
-
-          const seed = "CRITIC" + Date.now();
-
-          state.activeSlots.push({
-              type: 'critic',
-              id: seed,
-              seed: seed,
-              secretWord: secretWord,
-              sessionGuesses: [],
-              patience: 6, // Starts at 6 (Double normal, roughly)
-              constraint: { index: slotIndex }, // Needs a slot to sit in
-          });
-          state.customerSpawnCount++;
-      } else {
-          const customer = this.generateCustomer(state, slotIndex);
-          if (customer) {
-            state.activeSlots.push(customer);
-            state.customerSpawnCount++;
-          }
+      const customer = this.generateCustomer(state, slotIndex);
+      if (customer) {
+        state.activeSlots.push(customer);
+        state.customerSpawnCount++;
       }
     }
   },
@@ -166,6 +108,33 @@ export const GameLogic = {
   calculatePrediction(state, currentBuffer) {
     // No prediction logic needed without economy
     return {};
+  },
+
+  updateKeyHeat(state, word) {
+    if (!state.keyHeat) return;
+
+    // Count occurrences in the word
+    const wordCounts = {};
+    for (const char of word) {
+        wordCounts[char] = (wordCounts[char] || 0) + 1;
+    }
+
+    const { INCREMENT, DECAY, MAX } = GAME_CONFIG.HEAT_MECHANIC;
+
+    // Iterate all letters
+    for (let i = 65; i <= 90; i++) {
+        const char = String.fromCharCode(i);
+
+        // If already exploded, skip (it stays broken)
+        if (state.keyHeat[char] >= MAX) continue;
+
+        if (wordCounts[char]) {
+            state.keyHeat[char] += (wordCounts[char] * INCREMENT);
+        } else {
+            // Decrement unused letters
+            state.keyHeat[char] = Math.max(0, state.keyHeat[char] - DECAY);
+        }
+    }
   },
 
   processTurn(state) {
@@ -187,48 +156,22 @@ export const GameLogic = {
       }
     });
 
-    // Critic Logic
-    const critic = state.activeSlots.find(c => c.type === 'critic');
-    let criticDefeated = false;
-
-    if (critic) {
-        // Amnesia Logic: Push word to sessionGuesses (Validation already passed)
-        critic.sessionGuesses.push(state.buffer);
-
-        // Win Condition
-        if (state.buffer === critic.secretWord) {
-             criticDefeated = true;
-             state.globalPatienceBonus = (state.globalPatienceBonus || 0) + 1;
-        }
-    }
-
-    // Filter matches to exclude Critic from standard removal
-    // (Critics are only removed if defeated or patience runs out)
-    const standardMatches = matches.filter(id => {
-        const c = state.activeSlots.find(slot => slot.id === id);
-        return c && c.type !== 'critic';
-    });
-
-    // Remove matched standard customers
+    // Remove matched customers
     state.activeSlots = state.activeSlots.filter(
-      (c) => !standardMatches.includes(c.id)
+      (c) => !matches.includes(c.id)
     );
 
-    state.customersSatisfied += standardMatches.length;
+    state.customersSatisfied += matches.length;
 
-    // Remove defeated critic
-    if (criticDefeated) {
-        state.activeSlots = state.activeSlots.filter(c => c.type !== 'critic');
-        state.customersSatisfied += 1;
-    }
+    this.updateKeyHeat(state, state.buffer);
 
     const endTurnResult = this.endTurn(state);
 
     state.buffer = "";
     return {
         success: true,
-        matches: standardMatches,
-        happyDepartedIds: standardMatches,
+        matches: matches,
+        happyDepartedIds: matches,
         unhappyDepartedIds: endTurnResult.unhappyDepartedIds
     };
   },
@@ -250,20 +193,9 @@ export const GameLogic = {
     });
 
     // Departure Logic
-    const originalCount = state.activeSlots.length;
-
     // Identify unhappy departures (patience <= 0)
-    // Note: includes Critics if they run out of patience
     const unhappyDepartures = state.activeSlots.filter(c => c.patience <= 0);
     const unhappyDepartedIds = unhappyDepartures.map(c => c.id);
-
-    // Check for departing Critics (Loss Condition)
-    const departingCritics = unhappyDepartures.filter(c => c.type === 'critic');
-
-    departingCritics.forEach(critic => {
-        // Toast message for Critic loss
-        state.toastMessage = `They wanted: ${critic.secretWord}`;
-    });
 
     // Handle Broken Slots for unhappy departures
     if (!state.brokenSlots) state.brokenSlots = [];
@@ -287,7 +219,7 @@ export const GameLogic = {
     // Sync maxSlots with brokenSlots
     state.maxSlots = Math.max(0, 5 - state.brokenSlots.length);
 
-    this.spawnCriticOrCustomer(state);
+    this.spawnCustomer(state);
     state.turnCount++;
 
     return { unhappyDepartedIds };

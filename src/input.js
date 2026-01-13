@@ -1,6 +1,7 @@
 import { GameLogic } from './logic.js';
 import { ui } from './ui.js';
 import { state } from './state.js';
+import { GAME_CONFIG } from './config.js';
 
 export const InputHandler = {
     async handleVirtualKey(key) {
@@ -20,7 +21,13 @@ export const InputHandler = {
         }
 
         if (state.buffer.length < 5 && key.length === 1) {
-            state.buffer += key;
+            // Check heat
+            const upperKey = key.toUpperCase();
+            if (state.keyHeat && state.keyHeat[upperKey] >= GAME_CONFIG.HEAT_MECHANIC.MAX) {
+                // Key Exploded - ignore input
+                return;
+            }
+            state.buffer += upperKey;
             ui.render(state);
         }
     },
